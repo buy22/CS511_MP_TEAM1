@@ -1,4 +1,4 @@
-from connection import Database
+from Mysql import Mysql
 from dash import Dash, dcc, html, Input, Output, State
 
 app = Dash(__name__)
@@ -18,7 +18,7 @@ app.layout = html.Div([
 )
 def update_output(n_clicks, value):
     if value:
-        d = Database()
+        d = Mysql()
         d.connect()
         res = d.query_test1(value)
         d.close()
