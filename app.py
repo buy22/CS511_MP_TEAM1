@@ -86,19 +86,12 @@ app.layout = html.Div([
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns')],
-    Input('dropdown1', 'value'),
-<<<<<<< HEAD
-    Input('interval-component', 'n_intervals'))
-def update_figure_table(value, n_intervals):
-    if value == "MySQL":
-        db = MongoDB('mp_team1', 'test_table1')
-=======
-    #Input('interval-component', 'n_intervals')
-    )
+     Input('dropdown1', 'value'),
+     #Input('interval-component', 'n_intervals')
+     )
 def update_figure_table(value): # , n_intervals
-    if value == "Mysql":
+    if value == "MySQL":
         db = MongoDB('mp_team1', 'comments')
->>>>>>> 41013fc3181fdae86be84f34ec175733da08035d
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     elif value == "MongoDB":
@@ -107,7 +100,6 @@ def update_figure_table(value): # , n_intervals
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     else:
         return '3'
-
 
 @app.callback(
     Output('click_data', 'children'),
