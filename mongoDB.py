@@ -9,10 +9,6 @@ class MongoDB:
         self.collection = self.db[collection]
 
     def all_data(self):
-        data = pd.DataFrame(list(self.collection.find()))
+        # data = pd.DataFrame(list(self.collection.find()))
+        data = pd.DataFrame(list(self.collection.find({}, {"_id": 0})))
         return data
-
-
-a = MongoDB('mp_team1', 'test_table1')
-data1 = a.all_data()
-print(data1)
