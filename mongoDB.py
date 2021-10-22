@@ -10,7 +10,7 @@ class MongoDB:
 
     def all_data(self):
         # data = pd.DataFrame(list(self.collection.find()))
-        data = pd.DataFrame(list(self.collection.find({}, {"_id": 0})))
+        data = pd.DataFrame(list(self.collection.find({}, {"_id": 0}).limit(20)))
         return data
 
 
