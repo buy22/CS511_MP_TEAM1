@@ -12,3 +12,5 @@ class MongoDB:
         # data = pd.DataFrame(list(self.collection.find()))
         data = pd.DataFrame(list(self.collection.find({}, {"_id": 0})))
         return data
+
+

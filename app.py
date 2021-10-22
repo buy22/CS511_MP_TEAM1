@@ -5,9 +5,11 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
-app = Dash(__name__)
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
+    dcc.Store(id='database'),
     html.Div([
         html.H3('Select your database'),
         dcc.Dropdown(
@@ -22,38 +24,58 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 1'),
-        html.Div(dcc.Input(id='input-on-submit', type='text')),
-        html.Button('Submit', id='submit-val', n_clicks=0),
-        html.Div(id='container-button-basic',
-                 children='Enter a value and press submit')
     ]),
     html.Div([
         html.H3('Section 2')
     ]),
     html.Div([
         html.H3('Section 3'),
-        dcc.Store(id='all_data'),
-        html.Div(id='main_data_table'),
-        dcc.Graph(id='live_update_graph')
+        html.Div(dcc.Textarea(
+                    id='custom_query',
+                    placeholder='Enter your query here...',
+                    style={'width': '80%', 'height': 200},
+                ),
+                 style=dict(display='flex', justifyContent='center')),
+        html.Div(html.Button('Query', id='submit_query', n_clicks=0),
+                 style=dict(display='flex', justifyContent='center')),
+        html.Div(id='query_result'),
+        dcc.Graph(id='live_update_table'),
+        dcc.Interval(
+            id='interval-component',
+            interval=1*1000,  # in milliseconds
+            n_intervals=0
+        )
     ])
 ])
 
 
 @app.callback(
-    Output('main_data_table', 'children'),
-    Output('live_update_graph', 'figure'),
-    Input('dropdown1', 'value'))
-def update_figure_table(value):
+    Output('live_update_table', 'figure'),
+    Input('dropdown1', 'value'),
+    Input('interval-component', 'n_intervals'))
+def update_figure_table(value, n_intervals):
     if value == "Mysql":
-        return '1'
+        db = MongoDB('mp_team1', 'test_table1')
+        df = db.all_data()
+        d = df.to_json(orient="split")
+        fig = create_table(df)
+        return fig
     elif value == "MongoDB":
         db = MongoDB('mp_team1', 'test_table1')
         df = db.all_data()
         d = df.to_json(orient="split")
         fig = create_table(df)
-        return d, fig
+        return fig
     else:
         return '3'
+
+
+@app.callback(
+    Output('query_result', 'children'),
+    Input('submit_query', 'n_clicks'),
+    State('custom_query', 'value'))
+def execute_query(n_clicks, value):
+    return value
 
 
 def create_table(dff):
