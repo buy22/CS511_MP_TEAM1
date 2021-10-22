@@ -50,7 +50,7 @@ app.layout = html.Div([
         html.H3('Section 3'),
         html.Div(dcc.Textarea(
                     id='custom_query',
-                    placeholder='Enter your query here...',
+                    placeholder='Enter your MySQL query here...',
                     style={'width': '80%', 'height': 150},
                 ),
                  style=dict(display='flex', justifyContent='center')),
@@ -126,24 +126,18 @@ def display_click_data(active_cell, table_data):
 @app.callback(
     Output('query_result', 'children'),
     Input('submit_query', 'n_clicks'),
-    Input('dropdown1', 'value'),
     State('custom_query', 'value')
 )
-def execute_query(n_clicks, value, query):
+def execute_query(n_clicks, query):
     if n_clicks == 0:
         # execute_query fires immediately
         # and displays an error since there is no query to return...
         # this will prevent that from occurring until a query is sent.
         raise PreventUpdate
     else:
-        if value == "MySQL":
-            db = Mysql('team1')
-            results = db.send_query(query)
-            return 'Output: {}'.format(results)
-        elif value == "MongoDB":
-            return '3'
-        else: # Neo4j
-            return '3'
+        db = Mysql('team1')
+        results = db.send_query(query)
+        return 'Output: {}'.format(results)
 
 '''
 def create_table(dff):
