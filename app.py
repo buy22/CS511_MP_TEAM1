@@ -1,4 +1,5 @@
 from dash import Dash, dcc, html, Input, Output, State, dash_table
+from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
 import pandas as pd
@@ -55,7 +56,12 @@ app.layout = html.Div([
                  style=dict(display='flex', justifyContent='center')),
         html.Div(html.Button('Query', id='submit_query', n_clicks=0),
                  style=dict(display='flex', justifyContent='center')),
-        html.Div(id='query_result'),
+        html.Div(
+            html.H4('Query Results')
+        ),
+        html.Div(id='query_result',
+                 style={'width': '80%', 'marginLeft':'auto', 'marginRight':'auto'}),
+        html.Br(),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -120,9 +126,24 @@ def display_click_data(active_cell, table_data):
 @app.callback(
     Output('query_result', 'children'),
     Input('submit_query', 'n_clicks'),
-    State('custom_query', 'value'))
-def execute_query(n_clicks, value):
-    return value
+    Input('dropdown1', 'value'),
+    State('custom_query', 'value')
+)
+def execute_query(n_clicks, value, query):
+    if n_clicks == 0:
+        # execute_query fires immediately
+        # and displays an error since there is no query to return...
+        # this will prevent that from occurring until a query is sent.
+        raise PreventUpdate
+    else:
+        if value == "MySQL":
+            db = Mysql('team1')
+            results = db.send_query(query)
+            return 'Output: {}'.format(results)
+        elif value == "MongoDB":
+            return '3'
+        else: # Neo4j
+            return '3'
 
 '''
 def create_table(dff):

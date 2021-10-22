@@ -24,9 +24,15 @@ class Mysql:
             res.append("{} | {} | {} | {} | {} was queried by 'author = {}'".format(a, b, c, d, e, value))
         return res
 
-    def all_data(self):
+    def send_query(self, query):
         self.connect()
         self.cursor = self.cnx.cursor()
+        self.cursor.execute(query)
+        rows = self.cursor.fetchall()
+        return rows
+    
+    def all_data(self):
+        self.connect()
         data = pd.read_sql(
             "SELECT * FROM reddit_data LIMIT 20", self.cnx
         );
