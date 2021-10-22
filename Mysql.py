@@ -26,4 +26,3 @@ class Mysql:
     def close(self):
         self.cursor.close()
         self.cnx.close()
-

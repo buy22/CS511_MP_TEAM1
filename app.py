@@ -15,25 +15,41 @@ app.layout = html.Div([
         dcc.Dropdown(
             id='dropdown1',
             options=[
-                {'label': 'Mysql', 'value': 'Mysql'},
+                {'label': 'MySQL', 'value': 'MySQL'},
                 {'label': 'MongoDB', 'value': 'MongoDB'},
-                {'label': 'graph database', 'value': 'graph database'},
+                {'label': 'Neo4j', 'value': 'Neo4j'},
             ],
-            value='Mysql'
+            value='MySQL'
         )
     ]),
     html.Div([
         html.H3('Section 1'),
     ]),
-    html.Div([
-        html.H3('Section 2')
+    html.Div([ # TODO/WIP
+        html.H3('Section 2: Workflows'),
+        html.Table([
+            # Header
+            html.Thead(
+                html.Tr([html.Th("Workflow"),
+                        html.Th("Status"),
+                        html.Th("Attribute1"),
+                        html.Th("Attribute2")])
+            ),
+            # Body
+            html.Tbody([
+                html.Tr([html.Td("temp"),
+                        html.Td("temp"),
+                        html.Td("temp"),
+                        html.Td("temp")])
+            ])
+        ], style={'width': '75%', 'marginLeft':'auto', 'marginRight':'auto'})
     ]),
     html.Div([
         html.H3('Section 3'),
         html.Div(dcc.Textarea(
                     id='custom_query',
                     placeholder='Enter your query here...',
-                    style={'width': '80%', 'height': 200},
+                    style={'width': '80%', 'height': 150},
                 ),
                  style=dict(display='flex', justifyContent='center')),
         html.Div(html.Button('Query', id='submit_query', n_clicks=0),
@@ -54,7 +70,7 @@ app.layout = html.Div([
     Input('dropdown1', 'value'),
     Input('interval-component', 'n_intervals'))
 def update_figure_table(value, n_intervals):
-    if value == "Mysql":
+    if value == "MySQL":
         db = MongoDB('mp_team1', 'test_table1')
         df = db.all_data()
         d = df.to_json(orient="split")
