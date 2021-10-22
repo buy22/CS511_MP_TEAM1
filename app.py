@@ -91,14 +91,14 @@ app.layout = html.Div([
      )
 def update_figure_table(value): # , n_intervals
     if value == "MySQL":
-        db = MongoDB('mp_team1', 'comments')
+        db = Mysql('team1')
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     elif value == "MongoDB":
         db = MongoDB('mp_team1', 'comments')
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
-    else:
+    else: # Neo4j
         return '3'
 
 @app.callback(
@@ -116,7 +116,6 @@ def display_click_data(active_cell, table_data):
     else:
         out = 'no cell selected'
     return out
-
 
 @app.callback(
     Output('query_result', 'children'),
