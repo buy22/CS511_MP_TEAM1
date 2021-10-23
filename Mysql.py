@@ -106,10 +106,10 @@ class Mysql:
         except Exception as ex:
             return None, False
 
-    '''def workflow_step3(self, data, attributes):
+    def workflow_step3(self, data, attributes):
         try:
             df = data[data.columns.intersection(attributes)]
             time.sleep(3)
             return df, True
         except Exception as ex:
-            return None, False'''
+            return None, False
