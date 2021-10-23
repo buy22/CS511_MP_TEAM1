@@ -48,22 +48,23 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 2: Workflows'),
-        html.Table([
-            # Header
-            html.Thead(
-                html.Tr([html.Th("Workflow"),
-                        html.Th("Status"),
-                        html.Th("Attribute1"),
-                        html.Th("Attribute2")])
-            ),
-            # Body
-            html.Tbody([
-                html.Tr([html.Td("temp"),
-                        html.Td("temp"),
-                        html.Td("temp"),
-                        html.Td("temp")])
-            ])
-        ], style={'width': '75%', 'marginLeft':'auto', 'marginRight':'auto'})
+        dash_table.DataTable(
+            id='workflow_table',
+            columns=[
+                {'name': 'ID', 'id': 'workflow_table_id'},
+                {'name': 'Name', 'id': 'workflow_table_name'},
+                {'name': 'Schedule', 'id': 'workflow_table_schedule'},
+                {'name': 'Score Greater Than', 'id': 'workflow_table_score'},
+                {'name': 'Controversiality Less Than', 'id': 'workflow_table_controversiality'},
+                {'name': 'Author', 'id': 'workflow_table_author'},
+                {'name': 'Search Words', 'id': 'workflow_table_search'},
+            ],
+            data=[],
+            style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
+            style_table={'overflowY': 'show'},
+            page_current=0,
+            page_size=10,
+        )
     ]),
     html.Div([
         html.H3('Section 3: Query and View Data'),
@@ -127,7 +128,7 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
     if n_clicks:
         wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
         workflows.append(wf)
-        return str(wf)
+        return ""
 
 
 @app.callback(
@@ -182,6 +183,21 @@ def execute_query(n_clicks, query):
         db = Mysql('team1')
         results = db.send_query(query)
         return 'Output: {}'.format(results)
+
+
+@app.callback(
+    [Output('workflow_table', 'data'),
+     Output('workflow_table', 'columns')],
+    [Input('create_workflow', 'n_clicks')]
+    )
+def update_workflow_table(n_clicks): # should update each time a new workflow is made
+    to_add = []
+    for workflow in workflows:
+        to_add.append(workflow.to_list())
+    columns = ['ID', 'Name', 'Schedule', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
+    df = pd.DataFrame(to_add, columns=columns)
+    return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+
 
 '''
 def create_table(dff):

@@ -13,4 +13,6 @@ class Workflow:
     def __str__(self):
         return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}'.format(
             str(self.id), self.name, self.schedule, self.conditions)
-
+    
+    def to_list(self):
+        return [self.id, self.name, self.schedule, self.conditions[0], self.conditions[1], self.conditions[2], self.conditions[3]]
