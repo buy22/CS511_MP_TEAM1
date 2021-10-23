@@ -125,12 +125,13 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
         workflows.append(wf)
         return str(wf)
 
+
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns')],
-     Input('dropdown1', 'value'),
-     #Input('interval-component', 'n_intervals')
-     )
+    Input('dropdown1', 'value'),
+    #Input('interval-component', 'n_intervals')
+    )
 def update_figure_table(value): # , n_intervals
     if value == "MySQL":
         db = Mysql('team1')

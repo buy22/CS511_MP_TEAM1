@@ -58,9 +58,11 @@ class MongoDB:
         except Exception as ex:
             return None, False
 
-    def workflow_step3(self, data, attributes):
+    def workflow_step3(self, data, attributes, table):
         try:
             df = data[data.columns.intersection(attributes)]
+            collection = self.db[table]
+            x = collection.insert_many(df.to_dict('records'))
             time.sleep(3)
             return df, True
         except Exception as ex:

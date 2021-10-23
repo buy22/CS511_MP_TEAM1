@@ -1,5 +1,7 @@
 import mysql.connector
 import pandas as pd
+import time
+
 
 class Mysql:
     def __init__(self, db):
