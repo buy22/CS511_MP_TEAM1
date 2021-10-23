@@ -145,7 +145,7 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
     Input('dropdown1', 'value'))
 def update_figure_table(value): # , n_intervals
     if value == "MySQL":
-        db = Mysql('team1')
+        db = Mysql('team1', 'reddit_data') # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
         # show tables query returns list of tuples for some reason
         options = [{'label': opt[0], 'value': opt[0]} for opt in opts]
@@ -209,7 +209,8 @@ def execute_query(n_clicks, query):
         # this will prevent that from occurring until a query is sent.
         raise PreventUpdate
     else:
-        db = Mysql('team1')
+        db = Mysql('team1', 'reddit_data') 
+        # table does not matter here, so just put in reddit_data as default
         results = db.send_query(query)
         return 'Output: {}'.format(results)
 

@@ -36,7 +36,7 @@ class Mysql:
     
     def all_data(self):
         self.connect()
-        query = "SELECT * FROM " + table + " LIMIT 20"
+        query = "SELECT * FROM " + self.table + " LIMIT 20"
         data = pd.read_sql(
             query, self.cnx
         );
