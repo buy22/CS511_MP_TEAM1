@@ -12,6 +12,14 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 workflows = []
 
+
+def get_columns():
+    db = Mysql('team1', 'reddit_data')
+    df = db.all_data()
+    cols = df.columns
+    return [{'label': opt, 'value': opt} for opt in cols]
+
+
 app.layout = html.Div([
     dcc.Store(id='database'),
     html.Div([
@@ -23,6 +31,7 @@ app.layout = html.Div([
                 {'label': 'MongoDB', 'value': 'MongoDB'},
                 {'label': 'Neo4j', 'value': 'Neo4j'},
             ],
+            style={'width': '50%'},
             value='MySQL'
         )
     ]),
@@ -40,7 +49,13 @@ app.layout = html.Div([
         # currently MySQL will assume that only one word is inputted (ex. if multiple words are given),
         # they will not be treated separately in the query. something that I can probably fix after the MP
         html.Div(dcc.Input(id='condition4', placeholder="what keyword to search?"),
-                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
+                 style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
+        html.Div(dcc.Dropdown(
+            id='attributes_keep',
+            options=get_columns(),
+            value=[], placeholder='select attributes to keep',
+            multi=True
+        ), style={'height': 100}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
                  style={'height': 50}),
         html.Div(id='create_workflow_result',
@@ -68,6 +83,7 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 3: Query and View Data'),
+        # Mysql query section
         html.Div([
             html.Div(dcc.Textarea(
                     id='custom_query',
@@ -79,17 +95,21 @@ app.layout = html.Div([
                      style=dict(display='block', justifyContent='center')),
             html.Div(
                 html.H4('Query Results')
-                , style= {'display': 'block'}
+                , style={'display': 'block'}
             ),
             html.Div(id='query_result',
                      style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
             html.Br()], id='sql_query', style={'display': 'block'}),
 
+        # data requiring inspection in incoming workflows
+
+
+        # views of various tables/collections
         html.Div([
             html.H6('Select your table/collection'),
             dcc.Dropdown(
                 id='dropdown2',
-                options=[],
+                options=[], style={'width': '50%'}
             )
         ], style={'height': 100}),
         dash_table.DataTable(
@@ -130,11 +150,12 @@ app.layout = html.Div([
      State('condition2', 'value'),
      State('condition3', 'value'),
      State('condition4', 'value'),
-     State('workflow_name', 'value')]
+     State('workflow_name', 'value'),
+     State('attributes_keep', 'value')]
 )
-def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name):
+def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name, attributes):
     if n_clicks:
-        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
+        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4], attributes)
         workflows.append(wf)
         return ""
 

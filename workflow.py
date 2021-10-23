@@ -1,5 +1,5 @@
 class Workflow:
-    def __init__(self, id, name, schedule=None, conditions=[]):
+    def __init__(self, id, name, schedule=None, conditions=[], attributes=[]):
         self.id = id
         self.name = name
         self.schedule = schedule
