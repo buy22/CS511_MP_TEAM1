@@ -27,7 +27,7 @@ app.layout = html.Div([
         )
     ]),
     html.Div([
-        html.H3('Section 1'),
+        html.H3('Section 1: Create Workflow'),
         html.Div(dcc.Input(id='workflow_name', placeholder="name of the workflow"),
                  style={'height': 30, 'margin-right': 10}),
         html.Br(),
@@ -35,52 +35,55 @@ app.layout = html.Div([
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality less than?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition3', placeholder="which author? (optional)"),
+        html.Div(dcc.Input(id='condition3', placeholder="which author?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         # currently MySQL will assume that only one word is inputted (ex. if multiple words are given),
         # they will not be treated separately in the query. something that I can probably fix after the MP
-        html.Div(dcc.Input(id='condition4', placeholder="what key word? (optional)"),
+        html.Div(dcc.Input(id='condition4', placeholder="what keyword to search?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
                  style={'height': 50}),
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
-    html.Div([ # TODO/WIP
+    html.Div([
         html.H3('Section 2: Workflows'),
-        html.Table([
-            # Header
-            html.Thead(
-                html.Tr([html.Th("Workflow"),
-                        html.Th("Status"),
-                        html.Th("Attribute1"),
-                        html.Th("Attribute2")])
-            ),
-            # Body
-            html.Tbody([
-                html.Tr([html.Td("temp"),
-                        html.Td("temp"),
-                        html.Td("temp"),
-                        html.Td("temp")])
-            ])
-        ], style={'width': '75%', 'marginLeft':'auto', 'marginRight':'auto'})
+        dash_table.DataTable(
+            id='workflow_table',
+            columns=[
+                {'name': 'ID', 'id': 'workflow_table_id'},
+                {'name': 'Name', 'id': 'workflow_table_name'},
+                {'name': 'Schedule', 'id': 'workflow_table_schedule'},
+                {'name': 'Score Greater Than', 'id': 'workflow_table_score'},
+                {'name': 'Controversiality Less Than', 'id': 'workflow_table_controversiality'},
+                {'name': 'Author', 'id': 'workflow_table_author'},
+                {'name': 'Search Words', 'id': 'workflow_table_search'},
+            ],
+            data=[],
+            style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
+            style_table={'overflowY': 'show'},
+            page_current=0,
+            page_size=10,
+        )
     ]),
     html.Div([
-        html.H3('Section 3'),
-        html.Div(dcc.Textarea(
+        html.H3('Section 3: Query and View Data'),
+        html.Div([
+            html.Div(dcc.Textarea(
                     id='custom_query',
                     placeholder='Enter your MySQL query here...',
                     style={'width': '80%', 'height': 150},
                 ),
-                 style=dict(display='flex', justifyContent='center')),
-        html.Div(html.Button('Query', id='submit_query', n_clicks=0),
-                 style=dict(display='flex', justifyContent='center')),
-        html.Div(
-            html.H4('Query Results')
-        ),
-        html.Div(id='query_result',
-                 style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
-        html.Br(),
+                 style=dict(display='block', justifyContent='center')),
+            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
+                     style=dict(display='block', justifyContent='center')),
+            html.Div(
+                html.H4('Query Results')
+                , style= {'display': 'block'}
+            ),
+            html.Div(id='query_result',
+                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
+            html.Br()], id='sql_query', style={'display': 'block'}),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -123,17 +126,15 @@ app.layout = html.Div([
 )
 def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name):
     if n_clicks:
-        if condition1 == None or condition2 == None:
-            return "Score and controversionality conditions are required"
-        else:
-            wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
-            workflows.append(wf)
-            return str(wf)
+        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
+        workflows.append(wf)
+        return ""
 
 
 @app.callback(
     [Output('live_update_table', 'data'),
-     Output('live_update_table', 'columns')],
+     Output('live_update_table', 'columns'),
+     Output('sql_query', 'style'),],
     Input('dropdown1', 'value'),
     #Input('interval-component', 'n_intervals')
     )
@@ -141,11 +142,11 @@ def update_figure_table(value): # , n_intervals
     if value == "MySQL":
         db = Mysql('team1')
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
     elif value == "MongoDB":
         db = MongoDB('mp_team1', 'comments')
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else: # Neo4j
         return '3'
 
@@ -182,6 +183,21 @@ def execute_query(n_clicks, query):
         db = Mysql('team1')
         results = db.send_query(query)
         return 'Output: {}'.format(results)
+
+
+@app.callback(
+    [Output('workflow_table', 'data'),
+     Output('workflow_table', 'columns')],
+    [Input('create_workflow', 'n_clicks')]
+    )
+def update_workflow_table(n_clicks): # should update each time a new workflow is made
+    to_add = []
+    for workflow in workflows:
+        to_add.append(workflow.to_list())
+    columns = ['ID', 'Name', 'Schedule', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
+    df = pd.DataFrame(to_add, columns=columns)
+    return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+
 
 '''
 def create_table(dff):
