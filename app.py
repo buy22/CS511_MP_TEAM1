@@ -86,7 +86,7 @@ app.layout = html.Div([
             html.Br()], id='sql_query', style={'display': 'block'}),
 
         html.Div([
-            html.H6('Select your your table/collection'),
+            html.H6('Select your table/collection'),
             dcc.Dropdown(
                 id='dropdown2',
                 options=[],
@@ -145,7 +145,11 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
     Input('dropdown1', 'value'))
 def update_figure_table(value): # , n_intervals
     if value == "MySQL":
-        return [], None
+        db = Mysql('team1')
+        opts = db.find_all_collections()
+        # show tables query returns list of tuples for some reason
+        options = [{'label': opt[0], 'value': opt[0]} for opt in opts]
+        return options, options[0]['value']
     elif value == "MongoDB":
         db = MongoDB('mp_team1')
         opts = db.find_all_collections()
@@ -165,7 +169,7 @@ def update_figure_table(value): # , n_intervals
     )
 def update_figure_table(value1, value2): # , n_intervals
     if value1 == "MySQL":
-        db = Mysql('team1')
+        db = Mysql('team1', value2)
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
     elif value1 == "MongoDB":

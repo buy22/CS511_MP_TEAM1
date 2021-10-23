@@ -4,10 +4,11 @@ import time
 
 
 class Mysql:
-    def __init__(self, db):
+    def __init__(self, db, table):
         self.cnx = None
         self.cursor = None
         self.database = db
+        self.table = table
 
     def connect(self):
         try:
@@ -35,8 +36,9 @@ class Mysql:
     
     def all_data(self):
         self.connect()
+        query = "SELECT * FROM " + table + " LIMIT 20"
         data = pd.read_sql(
-            "SELECT * FROM reddit_data LIMIT 20", self.cnx
+            query, self.cnx
         );
         return data
     
@@ -116,3 +118,11 @@ class Mysql:
             return df, True
         except Exception as ex:
             return None, False
+
+    def find_all_collections(self):
+        self.connect()
+        self.cursor = self.cnx.cursor()
+        self.cursor.execute("show tables from " + self.database)
+        rows = self.cursor.fetchall()
+        print(rows)
+        return rows
