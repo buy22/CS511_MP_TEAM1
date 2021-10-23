@@ -84,6 +84,14 @@ app.layout = html.Div([
             html.Div(id='query_result',
                      style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
             html.Br()], id='sql_query', style={'display': 'block'}),
+
+        html.Div([
+            html.H6('Select your your table/collection'),
+            dcc.Dropdown(
+                id='dropdown2',
+                options=[],
+            )
+        ], style={'height': 100}),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -129,6 +137,21 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
         wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
         workflows.append(wf)
         return ""
+
+
+@app.callback(
+    Output('dropdown2', 'options'),
+    Input('dropdown1', 'value'))
+def update_figure_table(value): # , n_intervals
+    if value == "MySQL":
+        return []
+    elif value == "MongoDB":
+        db = MongoDB('mp_team1')
+        opts = db.find_all_collections()
+        options = [{'label': opt, 'value': opt} for opt in opts]
+        return options
+    else: # Neo4j
+        return {'options': []}
 
 
 @app.callback(
