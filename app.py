@@ -7,9 +7,9 @@ import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import json
 
-# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # this css is not good
-app = Dash(__name__)
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     dcc.Store(id='database'),
