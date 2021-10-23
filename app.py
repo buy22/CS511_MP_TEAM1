@@ -37,6 +37,12 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 1: Create Workflow'),
+        html.Div(dcc.Dropdown(
+            id='attributes_keep',
+            options=get_columns(),
+            value=[], placeholder='select attributes to keep',
+            multi=True
+        ), style={'height': 50}),
         html.Div(dcc.Input(id='workflow_name', placeholder="name of the workflow"),
                  style={'height': 30, 'margin-right': 10}),
         html.Br(),
@@ -50,14 +56,10 @@ app.layout = html.Div([
         # they will not be treated separately in the query. something that I can probably fix after the MP
         html.Div(dcc.Input(id='condition4', placeholder="what keyword to search?"),
                  style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
-        html.Div(dcc.Dropdown(
-            id='attributes_keep',
-            options=get_columns(),
-            value=[], placeholder='select attributes to keep',
-            multi=True
-        ), style={'height': 100}),
+        html.Div(dcc.Input(id='workflow_dependency', type='number', placeholder="execute after which workflow?(id)"),
+                 style={'display': 'flex', 'float': 'right', 'height': 30, 'margin-right': 10}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
-                 style={'height': 50}),
+                 style={'margin-top': 50, 'height': 50}),
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
@@ -151,11 +153,13 @@ app.layout = html.Div([
      State('condition3', 'value'),
      State('condition4', 'value'),
      State('workflow_name', 'value'),
-     State('attributes_keep', 'value')]
+     State('attributes_keep', 'value'),
+     State('workflow_dependency', 'value')]
 )
-def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name, attributes):
+def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name, attributes, dependency):
     if n_clicks:
-        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4], attributes)
+        wf = Workflow(len(workflows), workflow_name, None,
+                      [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
         return ""
 

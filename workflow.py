@@ -1,5 +1,5 @@
 class Workflow:
-    def __init__(self, id, name, schedule=None, conditions=[], attributes=[]):
+    def __init__(self, id, name, schedule=None, conditions=[], attributes=[], dependency=None):
         self.id = id
         self.name = name
         self.schedule = schedule
@@ -9,6 +9,7 @@ class Workflow:
                 if i == 0 or i == 1:
                     assert int(j) > 0
                     self.conditions[i] = int(j)
+        self.dependency = dependency
 
     def __str__(self):
         return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}'.format(

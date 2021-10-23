@@ -124,5 +124,4 @@ class Mysql:
         self.cursor = self.cnx.cursor()
         self.cursor.execute("show tables from " + self.database)
         rows = self.cursor.fetchall()
-        print(rows)
         return rows
