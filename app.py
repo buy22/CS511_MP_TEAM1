@@ -67,20 +67,22 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 3: Query and View Data'),
-        html.Div(dcc.Textarea(
+        html.Div([
+            html.Div(dcc.Textarea(
                     id='custom_query',
                     placeholder='Enter your MySQL query here...',
                     style={'width': '80%', 'height': 150},
                 ),
-                 style=dict(display='flex', justifyContent='center')),
-        html.Div(html.Button('Query', id='submit_query', n_clicks=0),
-                 style=dict(display='flex', justifyContent='center')),
-        html.Div(
-            html.H4('Query Results')
-        ),
-        html.Div(id='query_result',
-                 style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
-        html.Br(),
+                 style=dict(display='block', justifyContent='center')),
+            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
+                     style=dict(display='block', justifyContent='center')),
+            html.Div(
+                html.H4('Query Results')
+                , style= {'display': 'block'}
+            ),
+            html.Div(id='query_result',
+                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
+            html.Br()], id='sql_query', style={'display': 'block'}),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -130,7 +132,8 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
 
 @app.callback(
     [Output('live_update_table', 'data'),
-     Output('live_update_table', 'columns')],
+     Output('live_update_table', 'columns'),
+     Output('sql_query', 'style'),],
     Input('dropdown1', 'value'),
     #Input('interval-component', 'n_intervals')
     )
@@ -138,11 +141,11 @@ def update_figure_table(value): # , n_intervals
     if value == "MySQL":
         db = Mysql('team1')
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
     elif value == "MongoDB":
         db = MongoDB('mp_team1', 'comments')
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else: # Neo4j
         return '3'
 
