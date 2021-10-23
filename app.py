@@ -124,7 +124,7 @@ app.layout = html.Div([
 def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name):
     if n_clicks:
         if condition1 == None or condition2 == None:
-            return "Score and controversionality conditions are required"
+            return "Score and controversiality conditions are required"
         else:
             wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
             workflows.append(wf)
