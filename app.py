@@ -7,8 +7,9 @@ import plotly.graph_objects as go
 import plotly.figure_factory as ff
 import json
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = Dash(__name__, external_stylesheets=external_stylesheets)
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# this css is not good
+app = Dash(__name__)
 
 app.layout = html.Div([
     dcc.Store(id='database'),
@@ -60,13 +61,15 @@ app.layout = html.Div([
             html.H4('Query Results')
         ),
         html.Div(id='query_result',
-                 style={'width': '80%', 'marginLeft':'auto', 'marginRight':'auto'}),
+                 style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
         html.Br(),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
-            style_table={'height': '300px', 'overflowY': 'auto'},
+            style_table={'overflowY': 'show'},
             data=[],
+            page_current=0,
+            page_size=10,
             css=[{
                     'selector': '.dash-spreadsheet td div',
                     'rule': '''
@@ -82,6 +85,7 @@ app.layout = html.Div([
 ])
 
 '''
+    # for live updating figures
     dcc.Interval(
         id='interval-component',
         interval=3*1000,  # in milliseconds

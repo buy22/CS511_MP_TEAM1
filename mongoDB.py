@@ -10,7 +10,8 @@ class MongoDB:
 
     def all_data(self):
         # data = pd.DataFrame(list(self.collection.find()))
-        show = {"_id": 0, "distinguished": 0}
+        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0, "id": 0,
+                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0}
         data = pd.DataFrame(list(self.collection.find({}, show).limit(20)))
         return data
 
@@ -38,7 +39,8 @@ class MongoDB:
             strict_conditions["$text"] = {"$search": a}
             inspection_conditions["$text"] = {"$search": a}
 
-        show = {"_id": 0, "distinguished": 0}
+        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0, "id": 0,
+                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0}
         try:
             strict_data = pd.DataFrame(
                 list(self.collection.find(strict_conditions, show).limit(20)))
