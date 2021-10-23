@@ -51,12 +51,12 @@ class Mysql:
         
         already_started_condition = False
         
-        if cond[0]:
+        if cond[0] and cond[0] is not None:
             already_started_condition = True
             strict_conditions = "WHERE score > " + str(cond[0])
             inspection_conditions = "WHERE score > " + str(max(cond[0] - 10, 0))
         # controversiality <
-        if cond[1]:
+        if cond[1] and cond[1] is not None:
             if already_started_condition:
                 strict_conditions += " AND controversiality < " + str(cond[1])
                 inspection_conditions += " AND controversiality < " + str(cond[1] + 2)
@@ -65,7 +65,7 @@ class Mysql:
                 strict_conditions = "WHERE controversiality < " + str(cond[1])
                 inspection_conditions = "WHERE controversiality < " + str(cond[1] + 2)
         # author =
-        if cond[2] and cond[2] is not None and cond[2] != "": # since default value could be None
+        if cond[2] and cond[2] is not None and cond[2] != "":
             if already_started_condition:
                 strict_conditions += " AND author = '" + cond[2] + "'"
                 inspection_conditions += " AND author = '" + cond[2] + "'"

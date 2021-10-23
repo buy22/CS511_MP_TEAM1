@@ -27,7 +27,7 @@ app.layout = html.Div([
         )
     ]),
     html.Div([
-        html.H3('Section 1'),
+        html.H3('Section 1: Create Workflow'),
         html.Div(dcc.Input(id='workflow_name', placeholder="name of the workflow"),
                  style={'height': 30, 'margin-right': 10}),
         html.Br(),
@@ -35,18 +35,18 @@ app.layout = html.Div([
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality less than?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition3', placeholder="which author? (optional)"),
+        html.Div(dcc.Input(id='condition3', placeholder="which author?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         # currently MySQL will assume that only one word is inputted (ex. if multiple words are given),
         # they will not be treated separately in the query. something that I can probably fix after the MP
-        html.Div(dcc.Input(id='condition4', placeholder="what key word? (optional)"),
+        html.Div(dcc.Input(id='condition4', placeholder="what keyword to search?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
                  style={'height': 50}),
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
-    html.Div([ # TODO/WIP
+    html.Div([
         html.H3('Section 2: Workflows'),
         html.Table([
             # Header
@@ -66,7 +66,7 @@ app.layout = html.Div([
         ], style={'width': '75%', 'marginLeft':'auto', 'marginRight':'auto'})
     ]),
     html.Div([
-        html.H3('Section 3'),
+        html.H3('Section 3: Query and View Data'),
         html.Div(dcc.Textarea(
                     id='custom_query',
                     placeholder='Enter your MySQL query here...',
@@ -123,12 +123,9 @@ app.layout = html.Div([
 )
 def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name):
     if n_clicks:
-        if condition1 == None or condition2 == None:
-            return "Score and controversiality conditions are required"
-        else:
-            wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
-            workflows.append(wf)
-            return str(wf)
+        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
+        workflows.append(wf)
+        return str(wf)
 
 
 @app.callback(
