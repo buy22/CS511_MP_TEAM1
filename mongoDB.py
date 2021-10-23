@@ -2,6 +2,7 @@ from pymongo import MongoClient
 import pandas as pd
 import time
 
+
 class MongoDB:
     def __init__(self, db, collection):
         self.client = MongoClient("localhost", 27017, maxPoolSize=50)
@@ -16,8 +17,6 @@ class MongoDB:
         return data
 
     def workflow_step1(self, cond):
-        assert cond[0] >= 0
-        assert cond[1] >= 0
         strict_conditions = {}
         inspection_conditions = {}
         # score >

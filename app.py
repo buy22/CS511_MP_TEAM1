@@ -2,14 +2,15 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
+from workflow import Workflow
 import pandas as pd
-import plotly.graph_objects as go
-import plotly.figure_factory as ff
 import json
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # this css is not good
 app = Dash(__name__, external_stylesheets=external_stylesheets)
+
+workflows = []
 
 app.layout = html.Div([
     dcc.Store(id='database'),
@@ -27,6 +28,21 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 1'),
+        html.Div(dcc.Input(id='workflow_name', placeholder="name of the workflow"),
+                 style={'height': 30, 'margin-right': 10}),
+        html.Br(),
+        html.Div(dcc.Input(id='condition1', placeholder="score greater than?"),
+                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
+        html.Div(dcc.Input(id='condition2', placeholder="controversiality less than?"),
+                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
+        html.Div(dcc.Input(id='condition3', placeholder="which author?"),
+                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
+        html.Div(dcc.Input(id='condition4', placeholder="what key words to search?"),
+                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
+        html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
+                 style={'height': 50}),
+        html.Div(id='create_workflow_result',
+                 style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
     html.Div([ # TODO/WIP
         html.H3('Section 2: Workflows'),
@@ -93,6 +109,22 @@ app.layout = html.Div([
     )
 '''
 
+
+@app.callback(
+    Output('create_workflow_result', 'children'),
+    Input('create_workflow', 'n_clicks'),
+    [State('condition1', 'value'),
+     State('condition2', 'value'),
+     State('condition3', 'value'),
+     State('condition4', 'value'),
+     State('workflow_name', 'value')]
+)
+def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name):
+    if n_clicks:
+        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
+        workflows.append(wf)
+        return str(wf)
+
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns')],
@@ -111,6 +143,7 @@ def update_figure_table(value): # , n_intervals
     else: # Neo4j
         return '3'
 
+
 @app.callback(
     Output('click_data', 'children'),
     [Input('live_update_table', 'active_cell')],
@@ -126,6 +159,7 @@ def display_click_data(active_cell, table_data):
     else:
         out = 'no cell selected'
     return out
+
 
 @app.callback(
     Output('query_result', 'children'),

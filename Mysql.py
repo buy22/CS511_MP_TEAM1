@@ -43,8 +43,6 @@ class Mysql:
         self.cnx.close()
     
     def workflow_step1(self, cond):
-        assert cond[0] >= 0
-        assert cond[1] >= 0
         strict_conditions = ""
         inspection_conditions = ""
         # score >
