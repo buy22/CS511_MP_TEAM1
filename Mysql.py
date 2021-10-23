@@ -65,7 +65,7 @@ class Mysql:
                 strict_conditions = "WHERE controversiality < " + str(cond[1])
                 inspection_conditions = "WHERE controversiality < " + str(cond[1] + 2)
         # author =
-        if cond[2] and cond[2] != "":
+        if cond[2] and cond[2] is not None and cond[2] != "": # since default value could be None
             if already_started_condition:
                 strict_conditions += " AND author = '" + cond[2] + "'"
                 inspection_conditions += " AND author = '" + cond[2] + "'"
@@ -74,7 +74,7 @@ class Mysql:
                 strict_conditions = "WHERE author = '" + cond[2] + "'"
                 inspection_conditions = "WHERE author = '" + cond[2] + "'"
         # partial text search in body
-        if cond[3] and cond[3] != "":
+        if cond[3] and cond[3] is not None and cond[3] != "":
             a = '\"%'+ cond[3] + '%\"'
             if already_started_condition:
                 strict_conditions += " AND body LIKE " + a
@@ -85,6 +85,7 @@ class Mysql:
                 inspection_conditions = "WHERE body LIKE " + a
         
         try:
+            self.connect()
             strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 20"
             inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 20"
             strict_data = pd.read_sql(

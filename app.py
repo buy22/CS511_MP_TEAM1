@@ -31,13 +31,15 @@ app.layout = html.Div([
         html.Div(dcc.Input(id='workflow_name', placeholder="name of the workflow"),
                  style={'height': 30, 'margin-right': 10}),
         html.Br(),
-        html.Div(dcc.Input(id='condition1', placeholder="score greater than?"),
+        html.Div(dcc.Input(id='condition1', type='number', placeholder="score greater than?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition2', placeholder="controversiality less than?"),
+        html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality less than?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition3', placeholder="which author?"),
+        html.Div(dcc.Input(id='condition3', placeholder="which author? (optional)"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition4', placeholder="what key words to search?"),
+        # currently MySQL will assume that only one word is inputted (ex. if multiple words are given),
+        # they will not be treated separately in the query. something that I can probably fix after the MP
+        html.Div(dcc.Input(id='condition4', placeholder="what key word? (optional)"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
                  style={'height': 50}),
@@ -121,9 +123,12 @@ app.layout = html.Div([
 )
 def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name):
     if n_clicks:
-        wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
-        workflows.append(wf)
-        return str(wf)
+        if condition1 == None or condition2 == None:
+            return "Score and controversionality conditions are required"
+        else:
+            wf = Workflow(len(workflows), workflow_name, None, [condition1, condition2, condition3, condition4])
+            workflows.append(wf)
+            return str(wf)
 
 
 @app.callback(
