@@ -140,34 +140,36 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4, wo
 
 
 @app.callback(
-    Output('dropdown2', 'options'),
+    [Output('dropdown2', 'options'),
+     Output('dropdown2', 'value')],
     Input('dropdown1', 'value'))
 def update_figure_table(value): # , n_intervals
     if value == "MySQL":
-        return []
+        return [], None
     elif value == "MongoDB":
         db = MongoDB('mp_team1')
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
-        return options
+        return options, options[0]['value']
     else: # Neo4j
-        return {'options': []}
+        return [], None
 
 
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns'),
      Output('sql_query', 'style'),],
-    Input('dropdown1', 'value'),
+    [Input('dropdown1', 'value'),
+     Input('dropdown2', 'value')]
     #Input('interval-component', 'n_intervals')
     )
-def update_figure_table(value): # , n_intervals
-    if value == "MySQL":
+def update_figure_table(value1, value2): # , n_intervals
+    if value1 == "MySQL":
         db = Mysql('team1')
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
-    elif value == "MongoDB":
-        db = MongoDB('mp_team1', 'comments')
+    elif value1 == "MongoDB":
+        db = MongoDB('mp_team1', value2)
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else: # Neo4j
