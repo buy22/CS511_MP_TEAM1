@@ -3,7 +3,8 @@ from mongoDB import MongoDB
 
 
 class Workflow:
-    def __init__(self, db, id, name, schedule=None, status="Not Started", conditions=[], attributes=[], dependency=None):
+    def __init__(self, db, id, name, schedule=None, status="Not Started", conditions=[], attributes=[],
+                 dependency=None, strict_data=None, inspect_data=None):
         self.id = id
         self.name = name
         if schedule:
@@ -20,6 +21,8 @@ class Workflow:
                     self.conditions[i] = int(j)
         self.dependency = dependency
         self.attributes = attributes
+        self.strict_data = strict_data
+        self.inspect_data = inspect_data
         self.db = db
 
     def __str__(self):
@@ -36,16 +39,18 @@ class Workflow:
             con = MongoDB('mp_team1', 'comment')
         else:
             return None
-        return con.workflow_step1(self.conditions)
+        res = con.workflow_step1(self.conditions)
+        self.strict_data, self.inspect_data, _ = res
+        return res
 
-    def workflow_step2(self, strict_data, inspection_data):
+    def workflow_step2(self, inspection_data):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
             con = MongoDB('mp_team1', 'comment')
         else:
             return None
-        return con.workflow_step2(strict_data, inspection_data)
+        return con.workflow_step2(self.strict_data, inspection_data)
 
     def workflow_step3(self, data):
         if self.db == 'MySQL':

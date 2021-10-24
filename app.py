@@ -5,6 +5,7 @@ from mongoDB import MongoDB
 from workflow import Workflow
 import pandas as pd
 import json
+import time
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # this css is not good
@@ -94,6 +95,7 @@ app.layout = html.Div([
     html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0),
                  style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
+    html.Div(id='workflow_inspect', style={'display': 'none'}),
     html.Div([
         html.H3('Section 3: Query and View Data'),
         # Mysql query section
@@ -279,8 +281,9 @@ def execute_query(n_clicks, query):
      Output('workflow_table', 'columns')],
     [Input('create_workflow', 'n_clicks'),
      Input('workflow_started', 'children'),
+     Input('workflow_inspect', 'children'),
      Input('step1', 'data')])
-def update_workflow_table(n_clicks, children, step1): # should update each time a new workflow is made
+def update_workflow_table(n_clicks, children1, children2, step1): # should update each time a new workflow is made
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
@@ -292,41 +295,73 @@ def update_workflow_table(n_clicks, children, step1): # should update each time 
 @app.callback(
     [Output('workflow_started', 'children'),
      Output('step0', 'data')],
-     Input('start_workflow', 'n_clicks'),
+    Input('start_workflow', 'n_clicks'),
     [State('workflow_table', 'active_cell')])
 def initiate_selected_workflow(n_clicks, active_cell):
     if n_clicks == 0:
         raise PreventUpdate
     else:
-        row = active_cell['row']
-        for wf in workflows:
-            if wf.id == row:
-                break
-        wf.status = "Querying"
-        return None, wf.id
+        if active_cell:
+            row = active_cell['row']
+            for wf in workflows:
+                if wf.id == row:
+                    break
+            wf.status = "Querying"
+            return None, wf.id
+        else:
+            return None, None
 
 
 @app.callback(
     Output('step1', 'data'),
     Input('step0', 'data'))
 def step1(row):
+    w = None
     for wf in workflows:
         if wf.id == row:
+            w = wf
             break
-    strict_data, inspect_data, success = wf.workflow_step1()
+    if not w:
+        return
+    strict_data, inspect_data, success = w.workflow_step1()
     if success:
         wf.status = "Data query success"
     else:
         wf.status = "Data query failed"
-    return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data}]).to_json(
+    return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
                 date_format='iso', orient='split')
+
+
+@app.callback(
+    [Output('inspection_data', 'data'),
+     Output('inspection_data', 'columns'),
+     Output('workflow_inspect', 'children')],
+    Input('step1', 'data'))
+def update_inspect(json_data): # , n_intervals
+    if json_data:
+        data = pd.read_json(json_data, orient='split')
+        _, inspect_data, idx = data['strict'], data['inspect'], data['id']
+        db = Mysql('team1', 'reddit_data')
+        cols = db.all_data().columns
+        inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
+        idx = idx[0]
+        time.sleep(3)
+        for wf in workflows:
+            if wf.id == idx:
+                break
+            wf.status = "Human inspection(if qualify)"
+        return (inspect_data.to_dict('records'),
+                [{'name': i, 'id': i}for i in inspect_data.columns],
+                None)
+    else:
+        return pd.DataFrame().to_dict('records'), [], None
+
 
 
 @app.callback(
     Output('workflow_click_data', 'children'),
     [Input('workflow_table', 'active_cell')],
-    [State('workflow_table', 'data')]
-)
+    [State('workflow_table', 'data')])
 def display_workflow_click_data(active_cell, table_data):
     if active_cell:
         cell = json.dumps(active_cell, indent=2)
