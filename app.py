@@ -272,10 +272,8 @@ def execute_query(n_clicks, query):
 @app.callback(
     [Output('workflow_table', 'data'),
      Output('workflow_table', 'columns')],
-    [Input('create_workflow', 'n_clicks'),
-     Input('workflow_started', 'children')
-    ])
-def update_workflow_table(n_clicks, value): # should update each time a new workflow is made
+    [Input('create_workflow', 'n_clicks')])
+def update_workflow_table(n_clicks): # should update each time a new workflow is made
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
