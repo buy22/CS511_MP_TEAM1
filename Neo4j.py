@@ -79,9 +79,9 @@ class Neo4j:
 
     def workflow_step2(self, strict_data, inspection_data):
         try:
-            strict_data.append(inspection_data)
+            res = strict_data.append(inspection_data)
             time.sleep(3)
-            return strict_data, True
+            return res, True
         except Exception as ex:
             return None, False
 

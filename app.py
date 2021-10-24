@@ -13,12 +13,10 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 workflows = []
-inspection_data = []
 
 
 def get_columns():
     db = Mysql('team1', 'reddit_data')
-    # db=Neo4j('neo4j')
     df = db.all_data()
     cols = df.columns
     return [{'label': opt, 'value': opt} for opt in cols]
@@ -71,6 +69,7 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 2: Workflows'),
+        dcc.Store(id='cur_id'),
         dcc.Store(id='step0'),
         dcc.Store(id='step1'),
         dcc.Store(id='step2'),
@@ -95,13 +94,13 @@ app.layout = html.Div([
         # for live updating figures
         dcc.Interval(
             id='interval-component',
-            interval=2*1000,  # in milliseconds
+            interval=1*1000,  # in milliseconds
             n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
-    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0),
-                 style={'height': 50, 'display': 'block'}),
+    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
+             style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
     html.Div(id='workflow_inspect', style={'display': 'none'}),
     html.Div([
@@ -129,9 +128,12 @@ app.layout = html.Div([
             id='inspection_data',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
             style_table={'overflowY': 'show'},
-            data=[],
+            row_selectable="multi",
+            selected_rows=[],
+            page_action="native",
             page_current=0,
             page_size=10,
+            data=[],
             css=[{
                     'selector': '.dash-spreadsheet td div',
                     'rule': '''
@@ -142,7 +144,10 @@ app.layout = html.Div([
                     '''
                 }],
         ),
-
+        html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
+                 style={'height': 50, 'display': 'block'}),
+        html.Div(id='workflow_result',
+                 style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
         # views of various tables/collections
         html.Div([
             html.H6('Select your table/collection'),
@@ -171,10 +176,6 @@ app.layout = html.Div([
         html.Div(id='click_data', style={'whiteSpace': 'pre-wrap', 'height': 200}),
     ])
 ])
-
-
-
-
 
 
 @app.callback(
@@ -223,6 +224,7 @@ def update_table_list(value): # , n_intervals
         options = []
         return options, None
 
+
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns'),
@@ -240,7 +242,7 @@ def update_figure_table(value1, value2): # , n_intervals
         db = MongoDB('mp_team1', value2)
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
-    else: #
+    else:
         db = Neo4j('neo4j')
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
@@ -296,7 +298,9 @@ def update_workflow_table(n_clicks, n_intervals):
 
 
 @app.callback(
-    Output('step0', 'data'),
+    [Output('step0', 'data'),
+     Output('start_workflow', 'disabled'),
+     Output('start_workflow', 'style')],
     Input('start_workflow', 'n_clicks'),
     [State('workflow_table', 'active_cell')])
 def initiate_selected_workflow(n_clicks, active_cell):
@@ -311,9 +315,9 @@ def initiate_selected_workflow(n_clicks, active_cell):
                     w = wf
                     break
             w.status = "Querying"
-            return w.id
+            return w.id, True, {'background-color': 'grey', 'color': 'grey'}
         else:
-            return None
+            return None, False, {}
 
 
 @app.callback(
@@ -339,14 +343,25 @@ def step1(row):
 
 @app.callback(
     [Output('inspection_data', 'data'),
-     Output('inspection_data', 'columns')],
-    Input('step1', 'data'))
-def update_inspect(json_data):
+     Output('inspection_data', 'columns'),
+     Output('cur_id', 'data')],
+    [Input('step1', 'data'),
+     Input('dropdown1', 'value')])
+def update_inspect(json_data, value):
     if json_data:
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
-        db = Mysql('team1', 'reddit_data')
-        cols = db.all_data().columns
+        db, df = None, None
+        if value == "MySQL":
+            db = Mysql('team1', 'reddit_data')
+            df = db.all_data()
+        elif value == "MongoDB":
+            db = MongoDB('mp_team1', 'comments')
+            df = db.all_data()
+        else:
+            db = Neo4j('neo4j')
+            df = db.all_data()
+        cols = df.columns
         inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
         w = None
@@ -356,9 +371,38 @@ def update_inspect(json_data):
                 break
         w.status = "Human inspection(if qualify)"
         return (inspect_data.to_dict('records'),
-                [{'name': i, 'id': i}for i in inspect_data.columns])
+                [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
+                pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'))
     else:
-        return pd.DataFrame().to_dict('records'), []
+        return pd.DataFrame().to_dict('records'), [], pd.DataFrame.from_records([{}]).to_json(date_format='iso', orient='split')
+
+
+@app.callback(
+    Output('workflow_result', 'children'),
+    Input('finish_inspection', 'n_clicks'),
+    [State('inspection_data', 'selected_rows'),
+     State('inspection_data', 'data'),
+     State('cur_id', 'data')])
+def finish_inspection(n_clicks, selected_rows, data, cur_id):
+    if n_clicks == 0:
+        raise PreventUpdate
+    res = []
+    for i in selected_rows:
+        res.append(data[i])
+    if cur_id:
+        idx = pd.read_json(cur_id, orient='split')['id'][0]
+        workflows[idx].retrieve_inspect_data(res)
+        workflows[idx].status = 'Storing to local database'
+        success = workflows[idx].workflow_step2()
+        if success:
+            _, success_step3 = workflows[idx].workflow_step3()
+            if success_step3:
+                workflows[idx].status = 'Workflow completed'
+                return 'Workflow {} completed'.format(str(idx))
+            else:
+                raise Exception
+        else:
+            raise Exception
 
 
 @app.callback(

@@ -58,9 +58,9 @@ class MongoDB:
 
     def workflow_step2(self, strict_data, inspection_data):
         try:
-            strict_data.append(inspection_data)
+            res = strict_data.append(inspection_data)
             time.sleep(3)
-            return strict_data, True
+            return res, True
         except Exception as ex:
             return None, False
 
@@ -68,6 +68,7 @@ class MongoDB:
         try:
             df = data[data.columns.intersection(attributes)]
             collection = self.db[table]
+            print(df)
             x = collection.insert_many(df.to_dict('records'))
             time.sleep(3)
             return df, True
