@@ -276,7 +276,6 @@ def update_table_list(value, n_intervals, children):
         opts = db.find_all_collections()
         # show tables query returns list of tuples for some reason
         options = [{'label': opt[0], 'value': opt[0]} for opt in opts]
-        print(opts)
         return options, options[0]['value']
     elif value == "MongoDB":
         db = MongoDB('mp_team1')
@@ -287,7 +286,6 @@ def update_table_list(value, n_intervals, children):
         db = Neo4j('neo4j')
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
-        print(opts)
         return options, options[0]['value']
 
 
@@ -308,7 +306,7 @@ def update_figure_table(value1, value2, children):
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else:
-        db = Neo4j('neo4j')
+        db = Neo4j('neo4j',value2)
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
 
@@ -424,7 +422,7 @@ def update_inspect(json_data, n_clicks, value):
             db = MongoDB('mp_team1', 'comments')
             df = db.all_data()
         else:
-            db = Neo4j('neo4j')
+            db = Neo4j('neo4j','Reddit')
             df = db.all_data()
         cols = df.columns
         inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
