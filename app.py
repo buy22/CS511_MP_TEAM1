@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-from Neo4j import Neo4j
+#from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -209,10 +209,15 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
-        if condition2 is not None and (int(condition2) < 0  or int(condition2) > 1):
+        if condition2 is not None and (int(condition2) < 0 or int(condition2) > 1):
             return "Invalid controversiality"
+        if dependency is not None:
+            for w in workflows:
+                if w.id == int(dependency):
+                    w.dependency = len(workflows)
+                    break
         wf = Workflow(db, len(workflows), workflow_name, schedule, "Idle",
-                      [condition1, condition2, condition3, condition4], attributes, dependency)
+                      [condition1, condition2, condition3, condition4], attributes)
         workflows.append(wf)
         return ""
 
@@ -235,30 +240,37 @@ def schedule_workflows(n_intervals):
     if not can_start:
         raise PreventUpdate
     for i in execution_list:
-        w = workflows[i]
-        w.status = "Querying"
-        success = w.workflow_step1(scheduled=True)
-        if not success:
-            raise PreventUpdate
-        w.status = "Data query success"
-        success = w.workflow_step2(scheduled=True)
-        if not success:
-            raise PreventUpdate
-        w.status = "Storing to local database"
-        _, success = w.workflow_step3()
-        if not success:
-            raise PreventUpdate
-        w.status = "Workflow completed"
-        w.wait_time = w.schedule
+        automation(i)
     return 'Scheduled workflow executed'
+
+
+def automation(i):
+    w = workflows[i]
+    w.status = "Querying"
+    success = w.workflow_step1(scheduled=True)
+    if not success:
+        raise PreventUpdate
+    w.status = "Data query success"
+    success = w.workflow_step2(scheduled=True)
+    if not success:
+        raise PreventUpdate
+    w.status = "Storing to local database"
+    _, success = w.workflow_step3()
+    if not success:
+        raise PreventUpdate
+    w.status = "Workflow completed"
+    w.wait_time = w.schedule
+    if w.dependency:
+        automation(w.dependency)
 
 
 @app.callback(
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
     [Input('dropdown1', 'value'),
-     Input('scheduling', 'n_intervals')])
-def update_table_list(value, n_intervals):
+     Input('scheduling', 'n_intervals'),
+     Input('workflow_result', 'children')])
+def update_table_list(value, n_intervals, children):
     if value == "MySQL":
         db = Mysql('team1', 'reddit_data') # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
@@ -283,9 +295,8 @@ def update_table_list(value, n_intervals):
      Output('sql_query', 'style')],
     [Input('dropdown1', 'value'),
      Input('dropdown2', 'value'),
-     Input('workflow_result', 'children')]
-    )
-def update_figure_table(value1, value2, children): # , n_intervals
+     Input('workflow_result', 'children')])
+def update_figure_table(value1, value2, children):
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
@@ -303,8 +314,7 @@ def update_figure_table(value1, value2, children): # , n_intervals
 @app.callback(
     Output('click_data', 'children'),
     [Input('live_update_table', 'active_cell')],
-    [State('live_update_table', 'data')]
-)
+    [State('live_update_table', 'data')])
 def display_click_data(active_cell, table_data):
     if active_cell:
         cell = json.dumps(active_cell, indent=2)
@@ -346,7 +356,7 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
+    columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
@@ -388,7 +398,7 @@ def step1(row):
         w.status = "Data query success"
     else:
         w.status = "Data query failed"
-    time.sleep(3)
+    time.sleep(2)
     return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
                 date_format='iso', orient='split')
 
@@ -398,11 +408,9 @@ def step1(row):
      Output('inspection_data', 'columns'),
      Output('cur_id', 'data')],
     [Input('step1', 'data'),
-     Input('dropdown1', 'value'),
-     Input('finish_inspection', 'n_clicks')])
-def update_inspect(json_data, value, n_clicks):
-    if n_clicks:
-        return [], [], pd.DataFrame().to_json(date_format='iso', orient='split')
+     Input('finish_inspection', 'n_clicks')],
+    State('dropdown1', 'value'))
+def update_inspect(json_data, n_clicks, value):
     if json_data:
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
@@ -419,12 +427,7 @@ def update_inspect(json_data, value, n_clicks):
         cols = df.columns
         inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
-        w = None
-        for wf in workflows:
-            if wf.id == idx:
-                w = wf
-                break
-        w.status = "Human inspection (if qualify)"
+        workflows[idx].status = "Human inspection (if qualify)"
         return (inspect_data.to_dict('records'),
                 [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
                 pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'))
@@ -433,7 +436,9 @@ def update_inspect(json_data, value, n_clicks):
 
 
 @app.callback(
-    Output('workflow_result', 'children'),
+    [Output('workflow_result', 'children'),
+     Output('workflow_table', 'active_cell'),
+     Output('start_workflow', 'n_clicks')],
     Input('finish_inspection', 'n_clicks'),
     [State('inspection_data', 'selected_rows'),
      State('inspection_data', 'data'),
@@ -442,12 +447,13 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
     if n_clicks == 0:
         raise PreventUpdate
     res = []
-    if not data:
-        return 'There is no data inspection in progress'
-    for i in selected_rows:
-        res.append(data[i])
+    if data:
+        for i in selected_rows:
+            res.append(data[i])
     if cur_id:
         idx = pd.read_json(cur_id, orient='split')['id'][0]
+        if workflows[idx].status == 'Idle':
+            return 'No inspection in progress', {'row': 0, 'column': 0, 'column_id': 'ID'}, 0
         workflows[idx].retrieve_inspect_data(res)
         workflows[idx].status = 'Storing to local database'
         success = workflows[idx].workflow_step2()
@@ -455,7 +461,11 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
             _, success_step3 = workflows[idx].workflow_step3()
             if success_step3:
                 workflows[idx].status = 'Workflow completed'
-                return 'Workflow {} completed'.format(str(idx))
+                row, button = 0, 0
+                if workflows[idx].dependency:
+                    row = workflows[idx].dependency
+                    button = 1
+                return 'Workflow {} completed'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
             else:
                 raise Exception
         else:
