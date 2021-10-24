@@ -28,11 +28,12 @@ class Workflow:
         self.wait_time = schedule
 
     def __str__(self):
-        return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}'.format(
-            str(self.id), self.name, self.schedule, self.conditions)
+        return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}, attributes: {}, dependency: {}'.format(
+            str(self.id), self.name, self.schedule, self.conditions, self.attributes, self.dependency)
     
     def to_list(self):
-        return [self.id, self.name, self.schedule, self.status, self.conditions[0], self.conditions[1], self.conditions[2], self.conditions[3]]
+        return [self.id, self.name, self.schedule, self.status, self.conditions[0], self.conditions[1],
+                self.conditions[2], self.conditions[3], str(self.dependency)]
 
     def retrieve_inspect_data(self, inspected):
         self.inspect_data = inspected
