@@ -272,8 +272,9 @@ def execute_query(n_clicks, query):
 @app.callback(
     [Output('workflow_table', 'data'),
      Output('workflow_table', 'columns')],
-    [Input('create_workflow', 'n_clicks')])
-def update_workflow_table(n_clicks): # should update each time a new workflow is made
+    [Input('create_workflow', 'n_clicks'),
+     Input('workflow_started', 'children')])
+def update_workflow_table(n_clicks, children): # should update each time a new workflow is made
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
@@ -283,28 +284,11 @@ def update_workflow_table(n_clicks): # should update each time a new workflow is
 
 
 @app.callback(
-    [Output('workflow_click_data', 'children'),
-     Output('start_workflow', 'style')],
-    [Input('workflow_table', 'active_cell')],
-    [State('workflow_table', 'data')]
-)
-def display_workflow_click_data(active_cell, table_data):
-    if active_cell:
-        cell = json.dumps(active_cell, indent=2)
-        row = active_cell['row']
-        value = table_data[row]
-        out = 'Selected workflow: ' + '%s' % value
-        return out, {'height': 50, 'display': 'block'}
-    else:
-        return 'no workflow selected', {'height': 50, 'display': 'none'}
-
-
-@app.callback(
     Output('workflow_started', 'children'),
-    [Input('start_workflow', 'n_clicks'),
-     Input('workflow_table', 'active_cell')]
-)
-def initiate_selected_workflow(n_clicks, active_cell):
+    Input('start_workflow', 'n_clicks'),
+    [State('workflow_table', 'active_cell'),
+     State('dropdown1', 'value')])
+def initiate_selected_workflow(n_clicks, active_cell, value):
     if n_clicks == 0:
         raise PreventUpdate
     else:
@@ -314,23 +298,24 @@ def initiate_selected_workflow(n_clicks, active_cell):
                 break
         # should probably call workflow_step1() in this method too
         wf.status = "Started"
-        return ""
+        return None
 
-'''
-def create_table(dff):
-    g = go.Figure(data=[go.Table(
-        header=dict(values=['author', 'controversiality',
-                            'created_utc', 'distinguished', 'retrieved_on', 'score', 'subreddit', 'body'],
-                    fill_color='paleturquoise',
-                    align='center'),
-        cells=dict(values=[dff.author, dff.controversiality, dff.created_utc, dff.distinguished, dff.retrieved_on,
-                           dff.score, dff.subreddit, dff.body],
-                   fill_color='lavender',
-                   align='left'))
-    ])
-    #g = ff.create_table(dff)
-    return g
-'''
+
+@app.callback(
+    Output('workflow_click_data', 'children'),
+    [Input('workflow_table', 'active_cell')],
+    [State('workflow_table', 'data')]
+)
+def display_workflow_click_data(active_cell, table_data):
+    if active_cell:
+        cell = json.dumps(active_cell, indent=2)
+        row = active_cell['row']
+        value = table_data[row]
+        out = 'Selected workflow: ' + '%s' % value
+        return out
+    else:
+        return 'no workflow selected'
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
