@@ -11,6 +11,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 workflows = []
+inspection_data = []
 
 
 def get_columns():
@@ -106,7 +107,23 @@ app.layout = html.Div([
             html.Br()], id='sql_query', style={'display': 'block'}),
 
         # data requiring inspection in incoming workflows
-
+        dash_table.DataTable(
+            id='inspection_data',
+            style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
+            style_table={'overflowY': 'show'},
+            data=[],
+            page_current=0,
+            page_size=10,
+            css=[{
+                    'selector': '.dash-spreadsheet td div',
+                    'rule': '''
+                        line-height: 15px;
+                        max-height: 30px; min-height: 30px; height: 30px;
+                        display: block;
+                        overflow-y: hidden;
+                    '''
+                }],
+        ),
 
         # views of various tables/collections
         html.Div([
@@ -157,13 +174,15 @@ app.layout = html.Div([
      State('workflow_name', 'value'),
      State('attributes_keep', 'value'),
      State('workflow_schedule', 'value'),
-     State('workflow_dependency', 'value')]
+     State('workflow_dependency', 'value'),
+     State('dropdown1', 'value')]
 )
-def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name, attributes, schedule, dependency):
+def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
+                    workflow_name, attributes, schedule, dependency, db):
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
-        wf = Workflow(len(workflows), workflow_name, schedule,
+        wf = Workflow(db, len(workflows), workflow_name, schedule,
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
         return ""
