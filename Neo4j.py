@@ -100,8 +100,10 @@ class Neo4j:
         except Exception as ex:
             return None, False
 
-    def find_all_collections(self):
-        pass
+    def find_all_collections(self):# return labels in Neo4j
+        query="call db.labels()"
+        rows=self.session.run(query).data()
+        return rows
 
     def plot_graph(self):
         import plotly.graph_objects as go
@@ -110,4 +112,4 @@ class Neo4j:
         G = nx.random_geometric_graph(200, 0.125)
 
 a=Neo4j('neo4j')
-t=a.all_data()
+t=a.find_all_collections()
