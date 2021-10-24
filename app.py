@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-from Neo4j import Neo4j
+#from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -406,7 +406,8 @@ def step1(row):
 @app.callback(
     [Output('inspection_data', 'data'),
      Output('inspection_data', 'columns'),
-     Output('cur_id', 'data')],
+     Output('cur_id', 'data'),
+     Output('inspection_data', 'selected_rows')],
     [Input('step1', 'data'),
      Input('finish_inspection', 'n_clicks')],
     State('dropdown1', 'value'))
@@ -427,10 +428,15 @@ def update_inspect(json_data, n_clicks, value):
         cols = df.columns
         inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
-        workflows[idx].status = "Human inspection (if qualify)"
-        return (inspect_data.to_dict('records'),
-                [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
-                pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'))
+        print(workflows[idx].status)
+        if workflows[idx].status == 'Storing to local database':
+            workflows[idx].status = "Human inspection (if qualify)"
+            return ([], [],
+                    pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
+        else:
+            return (inspect_data.to_dict('records'),
+                    [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
+                    pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'), [])
     else:
         raise PreventUpdate
 
