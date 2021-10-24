@@ -80,6 +80,7 @@ app.layout = html.Div([
             id='workflow_table',
             columns=[
                 {'name': 'ID', 'id': 'workflow_table_id'},
+                {'name': 'Database', 'id': 'workflow_table_db'},
                 {'name': 'Name', 'id': 'workflow_table_name'},
                 {'name': 'Schedule', 'id': 'workflow_table_schedule'},
                 {'name': 'Status', 'id': 'workflow_table_status'},
@@ -392,7 +393,7 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
+    columns = ['ID', 'Database', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
