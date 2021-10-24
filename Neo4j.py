@@ -73,6 +73,10 @@ class Neo4j:
             print(self.session.run(strict_query).data())
             strict_data = self.convert_to_dataframe(self.session.run(strict_query).data())
             inspection_data = self.convert_to_dataframe(self.session.run(inspection_query).data())
+            # remove  duplicate
+            cond = inspection_data['Reddit_redditID'].isin(strict_data['Reddit_redditID'])
+            inspection_data.drop(inspection_data[cond].index, inplace=True)
+
             time.sleep(3)
             return strict_data, inspection_data, True
         except Exception as ex:
