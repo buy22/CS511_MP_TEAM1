@@ -8,10 +8,19 @@ import pandas as pd
 import json
 import time
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-# this css is not good
-app = Dash(__name__, external_stylesheets=external_stylesheets)
+# external CSS stylesheets
+external_stylesheets = [
+    'https://codepen.io/chriddyp/pen/bWLwgP.css',
+    {
+        'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
+        'rel': 'stylesheet',
+        'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
+        'crossorigin': 'anonymous'
+    }
+]
 
+
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 workflows = []
 
 
