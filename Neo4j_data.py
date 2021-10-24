@@ -38,10 +38,3 @@ merge (s)-[:subreddit]->(reddit)
 result=session.run(ql).data()
 
 session.close()
-
-
-
-
-
-
-

@@ -56,6 +56,8 @@ app.layout = html.Div([
         # they will not be treated separately in the query. something that I can probably fix after the MP
         html.Div(dcc.Input(id='condition4', placeholder="what keyword to search?"),
                  style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
+        html.Div(dcc.Input(id='workflow_schedule', type='number', placeholder="execute how often? (mins)"),
+                 style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
         html.Div(dcc.Input(id='workflow_dependency', type='number', placeholder="execute after which workflow?(id)"),
                  style={'display': 'flex', 'float': 'right', 'height': 30, 'margin-right': 10}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
@@ -154,11 +156,14 @@ app.layout = html.Div([
      State('condition4', 'value'),
      State('workflow_name', 'value'),
      State('attributes_keep', 'value'),
+     State('workflow_schedule', 'value'),
      State('workflow_dependency', 'value')]
 )
-def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name, attributes, dependency):
+def create_workflow(n_clicks, condition1, condition2, condition3, condition4, workflow_name, attributes, schedule, dependency):
     if n_clicks:
-        wf = Workflow(len(workflows), workflow_name, None,
+        if schedule is not None and schedule < 0:
+            return "Please input a time (in minutes) greater than 0"
+        wf = Workflow(len(workflows), workflow_name, schedule,
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
         return ""
