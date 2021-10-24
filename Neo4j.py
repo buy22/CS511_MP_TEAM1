@@ -98,5 +98,11 @@ class Neo4j:
     def find_all_collections(self):
         pass
 
-a=Neo4j('neo4j')
-a.all_data()
+    def plot_graph(self):
+        import plotly.graph_objects as go
+        import networkx as nx
+
+        G = nx.random_geometric_graph(200, 0.125)
+
+# a=Neo4j('neo4j')
+# a.all_data()
