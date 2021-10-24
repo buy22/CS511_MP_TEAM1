@@ -49,7 +49,7 @@ app.layout = html.Div([
         html.Br(),
         html.Div(dcc.Input(id='condition1', type='number', placeholder="score greater than?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality less than?"),
+        html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality (0 or 1)"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(dcc.Input(id='condition3', placeholder="which author?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
@@ -190,6 +190,8 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
+        if int(condition4) < 0  or int(condition4) > 1:
+            return "Invalid controversiality"
         wf = Workflow(db, len(workflows), workflow_name, schedule, "Not Started",
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)

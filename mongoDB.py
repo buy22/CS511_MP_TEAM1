@@ -32,7 +32,7 @@ class MongoDB:
         # controversiality <
         if cond[1]:
             strict_conditions["controversiality"] = {"lt": cond[1]}
-            inspection_conditions["controversiality"] = {"lt": cond[1]+2}
+            inspection_conditions["controversiality"] = {"lt": cond[1]}
         # author =
         if cond[2]:
             strict_conditions["author"] = {cond[2]}
