@@ -3,7 +3,7 @@ from mongoDB import MongoDB
 
 
 class Workflow:
-    def __init__(self, db, id, name, schedule=None, conditions=[], attributes=[], dependency=None):
+    def __init__(self, db, id, name, schedule=None, status="Not Started", conditions=[], attributes=[], dependency=None):
         self.id = id
         self.name = name
         if schedule:
@@ -11,6 +11,7 @@ class Workflow:
             self.schedule = int(schedule)
         else:
             self.schedule = None
+        self.status = status
         self.conditions = conditions
         for i, j in enumerate(conditions):
             if j:
@@ -26,7 +27,7 @@ class Workflow:
             str(self.id), self.name, self.schedule, self.conditions)
     
     def to_list(self):
-        return [self.id, self.name, self.schedule, self.conditions[0], self.conditions[1], self.conditions[2], self.conditions[3]]
+        return [self.id, self.name, self.schedule, self.status, self.conditions[0], self.conditions[1], self.conditions[2], self.conditions[3]]
 
     def workflow_step1(self):
         if self.db == 'MySQL':

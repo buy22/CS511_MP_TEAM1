@@ -74,6 +74,7 @@ app.layout = html.Div([
                 {'name': 'ID', 'id': 'workflow_table_id'},
                 {'name': 'Name', 'id': 'workflow_table_name'},
                 {'name': 'Schedule', 'id': 'workflow_table_schedule'},
+                {'name': 'Status', 'id': 'workflow_table_status'},
                 {'name': 'Score Greater Than', 'id': 'workflow_table_score'},
                 {'name': 'Controversiality Less Than', 'id': 'workflow_table_controversiality'},
                 {'name': 'Author', 'id': 'workflow_table_author'},
@@ -86,6 +87,10 @@ app.layout = html.Div([
             page_size=10,
         )
     ]),
+    html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
+    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0),
+                 style={'height': 50, 'display': 'block'}),
+    html.Div(id='workflow_started', style={'display': 'none'}),
     html.Div([
         html.H3('Section 3: Query and View Data'),
         # Mysql query section
@@ -182,7 +187,7 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
-        wf = Workflow(db, len(workflows), workflow_name, schedule,
+        wf = Workflow(db, len(workflows), workflow_name, schedule, "Not Started",
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
         return ""
@@ -267,16 +272,52 @@ def execute_query(n_clicks, query):
 @app.callback(
     [Output('workflow_table', 'data'),
      Output('workflow_table', 'columns')],
-    [Input('create_workflow', 'n_clicks')]
-    )
-def update_workflow_table(n_clicks): # should update each time a new workflow is made
+    [Input('create_workflow', 'n_clicks'),
+     Input('workflow_started', 'children')
+    ])
+def update_workflow_table(n_clicks, value): # should update each time a new workflow is made
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Name', 'Schedule', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
+    columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
     df = pd.DataFrame(to_add, columns=columns)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
+
+@app.callback(
+    [Output('workflow_click_data', 'children'),
+     Output('start_workflow', 'style')],
+    [Input('workflow_table', 'active_cell')],
+    [State('workflow_table', 'data')]
+)
+def display_workflow_click_data(active_cell, table_data):
+    if active_cell:
+        cell = json.dumps(active_cell, indent=2)
+        row = active_cell['row']
+        value = table_data[row]
+        out = 'Selected workflow: ' + '%s' % value
+        return out, {'height': 50, 'display': 'block'}
+    else:
+        return 'no workflow selected', {'height': 50, 'display': 'none'}
+
+
+@app.callback(
+    Output('workflow_started', 'children'),
+    [Input('start_workflow', 'n_clicks'),
+     Input('workflow_table', 'active_cell'),
+     Input('dropdown1', 'value')]
+)
+def initiate_selected_workflow(n_clicks, active_cell, value):
+    if n_clicks == 0:
+        raise PreventUpdate
+    else:
+        row = active_cell['row']
+        for wf in workflows:
+            if wf.id == row:
+                break
+        # should probably call workflow_step1() in this method too
+        wf.status = "Started"
+        return ""
 
 '''
 def create_table(dff):
