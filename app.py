@@ -302,10 +302,9 @@ def display_workflow_click_data(active_cell, table_data):
 @app.callback(
     Output('workflow_started', 'children'),
     [Input('start_workflow', 'n_clicks'),
-     Input('workflow_table', 'active_cell'),
-     Input('dropdown1', 'value')]
+     Input('workflow_table', 'active_cell')]
 )
-def initiate_selected_workflow(n_clicks, active_cell, value):
+def initiate_selected_workflow(n_clicks, active_cell):
     if n_clicks == 0:
         raise PreventUpdate
     else:
