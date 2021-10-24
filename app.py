@@ -103,6 +103,11 @@ app.layout = html.Div([
             id='scheduling',
             interval=60*1000,
             n_intervals=0
+        ),
+        dcc.Interval(
+            id='update_table',
+            interval=150*1000,
+            n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
@@ -151,6 +156,7 @@ app.layout = html.Div([
                     '''
                 }],
         ),
+        html.Div(id='inspection_click_data', style={'whiteSpace': 'pre-wrap'}),
         html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
                  style={'height': 50, 'display': 'block'}),
         html.Div(id='workflow_result'),
@@ -277,7 +283,7 @@ def automation(i):
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
     [Input('dropdown1', 'value'),
-     Input('scheduling', 'n_intervals'),
+     Input('update_table', 'n_intervals'),
      Input('workflow_result', 'children')])
 def update_table_list(value, n_intervals, children):
     if value == "MySQL":
@@ -325,6 +331,22 @@ def update_figure_table(value1, value2, children):
     [Input('live_update_table', 'active_cell')],
     [State('live_update_table', 'data')])
 def display_click_data(active_cell, table_data):
+    if active_cell:
+        cell = json.dumps(active_cell, indent=2)
+        row = active_cell['row']
+        col = active_cell['column_id']
+        value = table_data[row][col]
+        out = '%s' % value
+    else:
+        out = 'no cell selected'
+    return out
+
+
+@app.callback(
+    Output('inspection_click_data', 'children'),
+    Input('inspection_data', 'active_cell'),
+    State('inspection_data', 'data'))
+def display_insepect_click_data(active_cell, table_data):
     if active_cell:
         cell = json.dumps(active_cell, indent=2)
         row = active_cell['row']
@@ -435,8 +457,10 @@ def update_inspect(json_data, n_clicks, value):
             db = Neo4j('neo4j','Reddit')
             df = db.all_data()
         cols = df.columns
-
-        inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
+        if type(inspect_data[0]) != list:
+            inspect_data = pd.DataFrame(data=[], columns=cols)
+        else:
+            inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
         if workflows[idx].status == 'Storing to local database':
             workflows[idx].status = "Human inspection (if qualify)"
@@ -474,15 +498,15 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
         success = workflows[idx].workflow_step2()
         if success:
             _, success_step3 = workflows[idx].workflow_step3()
+            workflows[idx].status = 'Workflow completed'
+            row, button = 0, 0
+            if workflows[idx].dependency:
+                row = workflows[idx].dependency
+                button = 1
             if success_step3:
-                workflows[idx].status = 'Workflow completed'
-                row, button = 0, 0
-                if workflows[idx].dependency:
-                    row = workflows[idx].dependency
-                    button = 1
                 return 'Workflow {} completed'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
             else:
-                raise Exception
+                return 'Workflow {} returned empty result. No write to database'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
         else:
             raise Exception
 
