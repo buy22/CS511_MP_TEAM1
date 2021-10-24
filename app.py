@@ -240,7 +240,6 @@ def update_table_list(value): # , n_intervals
     [Input('dropdown1', 'value'),
      Input('dropdown2', 'value'),
      Input('workflow_result', 'children')]
-
     )
 def update_figure_table(value1, value2, children): # , n_intervals
     if value1 == "MySQL":
@@ -286,7 +285,7 @@ def execute_query(n_clicks, query):
         # this will prevent that from occurring until a query is sent.
         raise PreventUpdate
     else:
-        db = Mysql('team1', 'reddit_data') 
+        db = Mysql('team1', 'reddit_data')
         # table does not matter here, so just put in reddit_data as default
         results = db.send_query(query)
         return 'Output: {}'.format(results)
@@ -307,9 +306,7 @@ def update_workflow_table(n_clicks, n_intervals):
 
 
 @app.callback(
-    [Output('step0', 'data'),
-     Output('start_workflow', 'disabled'),
-     Output('start_workflow', 'style')],
+    Output('step0', 'data'),
     Input('start_workflow', 'n_clicks'),
     [State('workflow_table', 'active_cell')])
 def initiate_selected_workflow(n_clicks, active_cell):
@@ -324,9 +321,9 @@ def initiate_selected_workflow(n_clicks, active_cell):
                     w = wf
                     break
             w.status = "Querying"
-            return w.id, True, {'background-color': 'grey', 'color': 'grey'}
+            return w.id
         else:
-            return None, False, {}
+            return None
 
 
 @app.callback(
