@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-from Neo4j import Neo4j
+#from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -139,8 +139,7 @@ app.layout = html.Div([
         ),
         html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
                  style={'height': 50, 'display': 'block'}),
-        html.Div(id='workflow_result',
-                 style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
+        html.Div(id='workflow_result'),
         # views of various tables/collections
         html.Div([
             html.H6('Select your table/collection'),
@@ -237,12 +236,13 @@ def update_table_list(value): # , n_intervals
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns'),
-     Output('sql_query', 'style'),],
+     Output('sql_query', 'style')],
     [Input('dropdown1', 'value'),
-     Input('dropdown2', 'value')]
+     Input('dropdown2', 'value'),
+     Input('workflow_result', 'children')]
 
     )
-def update_figure_table(value1, value2): # , n_intervals
+def update_figure_table(value1, value2, children): # , n_intervals
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
@@ -355,8 +355,11 @@ def step1(row):
      Output('inspection_data', 'columns'),
      Output('cur_id', 'data')],
     [Input('step1', 'data'),
-     Input('dropdown1', 'value')])
-def update_inspect(json_data, value):
+     Input('dropdown1', 'value'),
+     Input('finish_inspection', 'n_clicks')])
+def update_inspect(json_data, value, n_clicks):
+    if n_clicks:
+        return [], [], pd.DataFrame().to_json(date_format='iso', orient='split')
     if json_data:
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
@@ -383,7 +386,7 @@ def update_inspect(json_data, value):
                 [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
                 pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'))
     else:
-        return pd.DataFrame().to_dict('records'), [], pd.DataFrame.from_records([{}]).to_json(date_format='iso', orient='split')
+        raise PreventUpdate
 
 
 @app.callback(
@@ -396,6 +399,8 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
     if n_clicks == 0:
         raise PreventUpdate
     res = []
+    if not data:
+        return 'There is no data inspection in progress'
     for i in selected_rows:
         res.append(data[i])
     if cur_id:
