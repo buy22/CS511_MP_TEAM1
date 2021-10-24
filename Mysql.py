@@ -36,7 +36,7 @@ class Mysql:
     
     def all_data(self):
         self.connect()
-        query = "SELECT * FROM " + self.table + " LIMIT 20"
+        query = "SELECT * FROM " + self.table + " LIMIT 80"
         data = pd.read_sql(
             query, self.cnx
         );
@@ -88,8 +88,8 @@ class Mysql:
         
         try:
             self.connect()
-            strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 20"
-            inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 20"
+            strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 80"
+            inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 80"
             strict_data = pd.read_sql(
                 strict_query, self.cnx
             )

@@ -89,6 +89,11 @@ app.layout = html.Div([
             id='interval-component',
             interval=1500,  # in milliseconds
             n_intervals=0
+        ),
+        dcc.Interval(
+            id='scheduling',
+            interval=60*1000,
+            n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
@@ -215,8 +220,9 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
 @app.callback(
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
-    Input('dropdown1', 'value'))
-def update_table_list(value): # , n_intervals
+    [Input('dropdown1', 'value'),
+     Input('scheduling', 'n_intervals')])
+def update_table_list(value, n_intervals):
     if value == "MySQL":
         db = Mysql('team1', 'reddit_data') # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
