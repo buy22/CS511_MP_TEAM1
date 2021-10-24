@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-#from Neo4j import Neo4j
+from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -276,16 +276,18 @@ def update_table_list(value, n_intervals, children):
         opts = db.find_all_collections()
         # show tables query returns list of tuples for some reason
         options = [{'label': opt[0], 'value': opt[0]} for opt in opts]
+        print(opts)
         return options, options[0]['value']
     elif value == "MongoDB":
         db = MongoDB('mp_team1')
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
-    else: # Neo4j - no tables
+    else: # Neo4j - no tables, return nanme of lables instead
         db = Neo4j('neo4j')
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
+        print(opts)
         return options, options[0]['value']
 
 
@@ -308,7 +310,7 @@ def update_figure_table(value1, value2, children):
     else:
         db = Neo4j('neo4j')
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
 
 
 @app.callback(
