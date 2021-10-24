@@ -40,7 +40,7 @@ app.layout = html.Div([
         )
     ]),
     html.Div([
-        html.H3('Section 1: Create Workflow'),
+        html.H3('Create Workflow'),
         html.Div(dcc.Dropdown(
             id='attributes_keep',
             options=[],
@@ -64,13 +64,14 @@ app.layout = html.Div([
                  style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
         html.Div(dcc.Input(id='workflow_dependency', type='number', placeholder="execute after which workflow?(id)"),
                  style={'display': 'flex', 'float': 'right', 'height': 30, 'margin-right': 10}),
-        html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
+        html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0,
+                             style={'background-color': 'black', 'color': 'white'}),
                  style={'margin-top': 50, 'height': 50}),
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
     html.Div([
-        html.H3('Section 2: Workflows'),
+        html.H3('Workflows Table'),
         dcc.Store(id='cur_id'),
         dcc.Store(id='step0'),
         dcc.Store(id='step1'),
@@ -116,26 +117,9 @@ app.layout = html.Div([
     html.Div(id='workflow_started', style={'display': 'none'}),
     html.Div(id='schedule_text', style={'display': 'none'}),
     html.Div([
-        html.H3('Section 3: Query and View Data'),
-        # Mysql query section
-        html.Div([
-            html.Div(dcc.Textarea(
-                    id='custom_query',
-                    placeholder='Enter your MySQL query here...',
-                    style={'width': '80%', 'height': 150},
-                ),
-                 style=dict(display='block', justifyContent='center')),
-            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
-                     style=dict(display='block', justifyContent='center')),
-            html.Div(
-                html.H4('Query Results')
-                , style={'display': 'block'}
-            ),
-            html.Div(id='query_result',
-                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
-            html.Br()], id='sql_query', style={'display': 'block'}),
-
+        html.H3('Manage, View and Query Data'),
         # data requiring inspection in incoming workflows
+        html.H4('Data Inspections Table'),
         dash_table.DataTable(
             id='inspection_data',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -160,6 +144,26 @@ app.layout = html.Div([
         html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
                  style={'height': 50, 'display': 'block'}),
         html.Div(id='workflow_result'),
+
+        # Mysql query section
+        html.Div([
+            html.H4('Query for MySQL'),
+            html.Div(dcc.Textarea(
+                    id='custom_query',
+                    placeholder='Enter your MySQL query here...',
+                    style={'width': '80%', 'height': 150},
+                ),
+                 style=dict(display='block', justifyContent='center')),
+            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
+                     style=dict(display='block', justifyContent='center')),
+            html.Div(
+                html.H4('Query Results')
+                , style={'display': 'block'}
+            ),
+            html.Div(id='query_result',
+                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
+            html.Br()], id='sql_query', style={'display': 'block'}),
+
         # views of various tables/collections
         html.Div([
             html.H6('Select your table/collection/label'),
@@ -168,6 +172,7 @@ app.layout = html.Div([
                 options=[], style={'width': '50%'}
             )
         ], style={'height': 100}),
+        html.H4('Database View'),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -354,7 +359,7 @@ def display_insepect_click_data(active_cell, table_data):
         value = table_data[row][col]
         out = '%s' % value
     else:
-        out = 'no cell selected'
+        out = 'no cell selected/no data in the table'
     return out
 
 
