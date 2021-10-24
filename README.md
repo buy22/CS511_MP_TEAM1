@@ -1,6 +1,6 @@
 # CS511_MP_TEAM1
 
-Make sure modules such as mongoDB and mysql.connector are installed, if not install them using pip.
+Make sure modules such as mongoDB, neo4j, pandas, sqlalchemy, mysql.connector, etc. are installed, if not install them using pip.
 
 First set up the databases.
 

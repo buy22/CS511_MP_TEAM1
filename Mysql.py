@@ -126,7 +126,6 @@ class Mysql:
             time.sleep(3)
             return df, True
         except Exception as ex:
-            print(ex)
             return None, False
 
     def find_all_collections(self):
