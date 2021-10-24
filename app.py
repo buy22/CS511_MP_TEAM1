@@ -207,7 +207,7 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
     Input('dropdown1', 'value'))
-def update_figure_table(value): # , n_intervals
+def update_table_list(value): # , n_intervals
     if value == "MySQL":
         db = Mysql('team1', 'reddit_data') # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
@@ -219,13 +219,9 @@ def update_figure_table(value): # , n_intervals
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
-    else: # Neo4j
-        db=Neo4j('neo4j')
-        opts = db.find_all_collections()
-        options = [{'label': opt, 'value': opt} for opt in opts]
-        return options, options[0]['value']
-        options, options[0]['value']
-
+    else: # Neo4j - no tables
+        options = []
+        return options, None
 
 @app.callback(
     [Output('live_update_table', 'data'),
