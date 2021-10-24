@@ -68,9 +68,7 @@ class Neo4j:
         try:
             strict_query = "MATCH (m:Author)-[:Author]->(n:Reddit) " + strict_conditions + " RETURN n,m LIMIT 20"
             inspection_query = "MATCH (m:Author)-[:Author]->(n:Reddit) " + inspection_conditions + " RETURN n,m LIMIT 20"
-            print(strict_query)
-            print(inspection_query)
-            print(self.session.run(strict_query).data())
+
             strict_data = self.convert_to_dataframe(self.session.run(strict_query).data())
             inspection_data = self.convert_to_dataframe(self.session.run(inspection_query).data())
             # remove  duplicate
@@ -102,7 +100,7 @@ class Neo4j:
 
     def find_all_collections(self):# return labels in Neo4j
         query="call db.labels()"
-        rows=self.session.run(query).data()
+        rows=[dict.get('label') for dict in self.session.run(query).data()]
         return rows
 
     def plot_graph(self):
