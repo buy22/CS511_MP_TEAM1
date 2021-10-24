@@ -2,6 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
+from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -16,6 +17,7 @@ inspection_data = []
 
 def get_columns():
     db = Mysql('team1', 'reddit_data')
+    # db=Neo4j('neo4j')
     df = db.all_data()
     cols = df.columns
     return [{'label': opt, 'value': opt} for opt in cols]
@@ -210,7 +212,11 @@ def update_figure_table(value): # , n_intervals
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
     else: # Neo4j
-        return [], None
+        db=Neo4j()
+        opts = db.find_all_collections()
+        options = [{'label': opt, 'value': opt} for opt in opts]
+        return options, options[0]['value']
+        options, options[0]['value']
 
 
 @app.callback(
@@ -230,8 +236,10 @@ def update_figure_table(value1, value2): # , n_intervals
         db = MongoDB('mp_team1', value2)
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
-    else: # Neo4j
-        return '3'
+    else: #
+        db = MongoDB('neo4j')
+        df = db.all_data()
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
 
 
 @app.callback(
