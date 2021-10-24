@@ -91,6 +91,12 @@ app.layout = html.Div([
             style_table={'overflowY': 'show'},
             page_current=0,
             page_size=10,
+        ),
+        # for live updating figures
+        dcc.Interval(
+            id='interval-component',
+            interval=2*1000,  # in milliseconds
+            n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
@@ -166,14 +172,9 @@ app.layout = html.Div([
     ])
 ])
 
-'''
-    # for live updating figures
-    dcc.Interval(
-        id='interval-component',
-        interval=3*1000,  # in milliseconds
-        n_intervals=0
-    )
-'''
+
+
+
 
 
 @app.callback(
@@ -232,7 +233,7 @@ def update_figure_table(value): # , n_intervals
      Output('sql_query', 'style'),],
     [Input('dropdown1', 'value'),
      Input('dropdown2', 'value')]
-    #Input('interval-component', 'n_intervals')
+
     )
 def update_figure_table(value1, value2): # , n_intervals
     if value1 == "MySQL":
@@ -288,10 +289,8 @@ def execute_query(n_clicks, query):
     [Output('workflow_table', 'data'),
      Output('workflow_table', 'columns')],
     [Input('create_workflow', 'n_clicks'),
-     Input('workflow_started', 'children'),
-     Input('workflow_inspect', 'children'),
-     Input('step1', 'data')])
-def update_workflow_table(n_clicks, children1, children2, step1): # should update each time a new workflow is made
+     Input('interval-component', 'n_intervals')])
+def update_workflow_table(n_clicks, n_intervals):
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
@@ -301,8 +300,7 @@ def update_workflow_table(n_clicks, children1, children2, step1): # should updat
 
 
 @app.callback(
-    [Output('workflow_started', 'children'),
-     Output('step0', 'data')],
+    Output('step0', 'data'),
     Input('start_workflow', 'n_clicks'),
     [State('workflow_table', 'active_cell')])
 def initiate_selected_workflow(n_clicks, active_cell):
@@ -317,9 +315,9 @@ def initiate_selected_workflow(n_clicks, active_cell):
                     w = wf
                     break
             w.status = "Querying"
-            return None, w.id
+            return w.id
         else:
-            return None, None
+            return None
 
 
 @app.callback(
@@ -338,16 +336,16 @@ def step1(row):
         w.status = "Data query success"
     else:
         w.status = "Data query failed"
+    time.sleep(3)
     return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
                 date_format='iso', orient='split')
 
 
 @app.callback(
     [Output('inspection_data', 'data'),
-     Output('inspection_data', 'columns'),
-     Output('workflow_inspect', 'children')],
+     Output('inspection_data', 'columns')],
     Input('step1', 'data'))
-def update_inspect(json_data): # , n_intervals
+def update_inspect(json_data):
     if json_data:
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
@@ -355,16 +353,16 @@ def update_inspect(json_data): # , n_intervals
         cols = db.all_data().columns
         inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
-        time.sleep(3)
+        w = None
         for wf in workflows:
             if wf.id == idx:
+                w = wf
                 break
-            wf.status = "Human inspection(if qualify)"
+        w.status = "Human inspection(if qualify)"
         return (inspect_data.to_dict('records'),
-                [{'name': i, 'id': i}for i in inspect_data.columns],
-                None)
+                [{'name': i, 'id': i}for i in inspect_data.columns])
     else:
-        return pd.DataFrame().to_dict('records'), [], None
+        return pd.DataFrame().to_dict('records'), []
 
 
 @app.callback(
