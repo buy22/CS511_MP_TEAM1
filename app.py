@@ -147,7 +147,7 @@ app.layout = html.Div([
         html.Div(id='workflow_result'),
         # views of various tables/collections
         html.Div([
-            html.H6('Select your table/collection'),
+            html.H6('Select your table/collection/lable'),
             dcc.Dropdown(
                 id='dropdown2',
                 options=[], style={'width': '50%'}
