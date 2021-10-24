@@ -91,8 +91,6 @@ class Mysql:
             self.connect()
             strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 80"
             inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 80"
-            print(strict_query)
-            print(inspection_query)
             strict_data = pd.read_sql(
                 strict_query, self.cnx
             )
