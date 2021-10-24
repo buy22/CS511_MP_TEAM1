@@ -303,11 +303,13 @@ def initiate_selected_workflow(n_clicks, active_cell):
     else:
         if active_cell:
             row = active_cell['row']
+            w = None
             for wf in workflows:
                 if wf.id == row:
+                    w = wf
                     break
-            wf.status = "Querying"
-            return None, wf.id
+            w.status = "Querying"
+            return None, w.id
         else:
             return None, None
 
@@ -325,9 +327,9 @@ def step1(row):
         return
     strict_data, inspect_data, success = w.workflow_step1()
     if success:
-        wf.status = "Data query success"
+        w.status = "Data query success"
     else:
-        wf.status = "Data query failed"
+        w.status = "Data query failed"
     return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
                 date_format='iso', orient='split')
 
@@ -355,7 +357,6 @@ def update_inspect(json_data): # , n_intervals
                 None)
     else:
         return pd.DataFrame().to_dict('records'), [], None
-
 
 
 @app.callback(
