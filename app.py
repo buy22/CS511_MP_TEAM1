@@ -220,7 +220,7 @@ def update_figure_table(value): # , n_intervals
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
     else: # Neo4j
-        db=Neo4j()
+        db=Neo4j('neo4j')
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
@@ -245,7 +245,7 @@ def update_figure_table(value1, value2): # , n_intervals
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else: #
-        db = MongoDB('neo4j')
+        db = Neo4j('neo4j')
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
 
