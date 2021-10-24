@@ -12,7 +12,14 @@ session=driver.session(database='neo4j')
 #connnection testing
 session.run("Match () Return 1 Limit 1")
 
+#clear all data
+ql='''
+MATCH (n)
+DETACH DELETE n
+'''
+session.run(ql)
 
+#import data
 ql='''
 call apoc.load.json('sample_data.json')  yield value
 unwind value as v
@@ -31,7 +38,6 @@ merge (subreddit)-[:subreddit]->(reddit)
 // merge (issubmmiter:IsSubmitter {relationship:v.is_submitter})
 // merge (parentreddit:ParentReddit{id:v.parent_id})
 '''
-#import data
 result=session.run(ql).data()
 
 session.close()
