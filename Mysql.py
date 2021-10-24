@@ -10,7 +10,6 @@ class Mysql:
         self.cursor = None
         self.database = db
         self.table = table
-        self.counter = 0
 
     def connect(self):
         try:
@@ -92,6 +91,8 @@ class Mysql:
             self.connect()
             strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 80"
             inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 80"
+            print(strict_query)
+            print(inspection_query)
             strict_data = pd.read_sql(
                 strict_query, self.cnx
             )
@@ -118,14 +119,13 @@ class Mysql:
     def workflow_step3(self, data, attributes, table):
         try:
             df = data[data.columns.intersection(attributes)]
-            name = "workflow_table" + str(self.counter)
-            self.counter += 1
             # df.to_sql only seems to support SQLAlchemy engines?
             engine = create_engine("mysql://cs511:databaesCS511@localhost/{db}".format(db=self.database))
-            df.to_sql(name, engine, index=False, if_exists='replace') # convert to new table, drop the table if it exists already
+            df.to_sql(table, engine, index=False, if_exists='replace') # convert to new table, drop the table if it exists already
             time.sleep(3)
             return df, True
         except Exception as ex:
+            print(ex)
             return None, False
 
     def find_all_collections(self):
