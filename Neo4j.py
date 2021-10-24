@@ -22,7 +22,7 @@ class Neo4j:
 
     def all_data(self):
         # query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN n.body,n.score,n.controversiality,m.name LIMIT 25"
-        query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN n,m LIMIT 25"
+        query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit) RETURN Reddit,Author LIMIT 25"
         data= self.convert_to_dataframe(self.session.run(query).data())
         return data
 
