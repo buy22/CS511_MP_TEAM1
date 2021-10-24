@@ -3,8 +3,8 @@ from mongoDB import MongoDB
 
 
 class Workflow:
-    def __init__(self, db, id, name, schedule=None, status="Not Started", conditions=[], attributes=[],
-                 dependency=None, strict_data=None, inspect_data=None):
+    def __init__(self, db, id, name, schedule=None, status="Idle", conditions=[], attributes=[],
+                 dependency=None, strict_data=None):
         self.id = id
         self.name = name
         if schedule:
@@ -22,8 +22,10 @@ class Workflow:
         self.dependency = dependency
         self.attributes = attributes
         self.strict_data = strict_data
-        self.inspect_data = inspect_data
+        self.inspect_data = None
+        self.all = None
         self.db = db
+        self.wait_time = schedule
 
     def __str__(self):
         return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}'.format(
@@ -32,31 +34,40 @@ class Workflow:
     def to_list(self):
         return [self.id, self.name, self.schedule, self.status, self.conditions[0], self.conditions[1], self.conditions[2], self.conditions[3]]
 
-    def workflow_step1(self):
+    def retrieve_inspect_data(self, inspected):
+        self.inspect_data = inspected
+
+    def workflow_step1(self, scheduled=False):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
-            con = MongoDB('mp_team1', 'comment')
+            con = MongoDB('mp_team1', 'comments')
         else:
             return None
         res = con.workflow_step1(self.conditions)
-        self.strict_data, self.inspect_data, _ = res
+        if scheduled:
+            self.strict_data, _, _ = res
+        else:
+            self.strict_data, self.inspect_data, _ = res
         return res
 
-    def workflow_step2(self, inspection_data):
+    def workflow_step2(self, scheduled=False):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
-            con = MongoDB('mp_team1', 'comment')
+            con = MongoDB('mp_team1', 'comments')
         else:
             return None
-        return con.workflow_step2(self.strict_data, inspection_data)
+        if scheduled:
+            self.inspect_data = None
+        self.all, success = con.workflow_step2(self.strict_data, self.inspect_data)
+        return success
 
-    def workflow_step3(self, data):
+    def workflow_step3(self):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
-            con = MongoDB('mp_team1', 'comment')
+            con = MongoDB('mp_team1', 'comments')
         else:
             return None
-        return con.workflow_step3(data, self.attributes, 'workflow_'+str(self.id))
+        return con.workflow_step3(self.all, self.attributes, 'workflow_'+str(self.id))

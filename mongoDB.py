@@ -17,9 +17,9 @@ class MongoDB:
 
     def all_data(self):
         # data = pd.DataFrame(list(self.collection.find()))
-        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0, "id": 0,
-                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0}
-        data = pd.DataFrame(list(self.collection.find({}, show).limit(20)))
+        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0,
+                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0, 'author_cakeday': 0}
+        data = pd.DataFrame(list(self.collection.find({}, show).limit(80)))
         return data
 
     def workflow_step1(self, cond):
@@ -44,11 +44,12 @@ class MongoDB:
             strict_conditions["$text"] = {"$search": a}
             inspection_conditions["$text"] = {"$search": a}
 
-        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0, "id": 0,
-                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0}
+        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0,
+                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0, 'author_cakeday': 0}
         try:
             strict_data = pd.DataFrame(
                 list(self.collection.find(strict_conditions, show).limit(20)))
+            inspection_conditions["id"] = {"$nin": list(strict_data['id'])}
             inspection_data = pd.DataFrame(
                 list(self.collection.find(inspection_conditions, show).limit(20)))
             time.sleep(3)
@@ -58,9 +59,9 @@ class MongoDB:
 
     def workflow_step2(self, strict_data, inspection_data):
         try:
-            strict_data.append(inspection_data)
+            res = strict_data.append(inspection_data)
             time.sleep(3)
-            return strict_data, True
+            return res, True
         except Exception as ex:
             return None, False
 
@@ -68,6 +69,7 @@ class MongoDB:
         try:
             df = data[data.columns.intersection(attributes)]
             collection = self.db[table]
+            collection.drop()
             x = collection.insert_many(df.to_dict('records'))
             time.sleep(3)
             return df, True

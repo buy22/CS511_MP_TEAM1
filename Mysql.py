@@ -36,7 +36,7 @@ class Mysql:
     
     def all_data(self):
         self.connect()
-        query = "SELECT * FROM " + self.table + " LIMIT 20"
+        query = "SELECT * FROM " + self.table + " LIMIT 80"
         data = pd.read_sql(
             query, self.cnx
         );
@@ -88,14 +88,14 @@ class Mysql:
         
         try:
             self.connect()
-            strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 20"
-            inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 20"
+            strict_query = "SELECT * FROM reddit_data " + strict_conditions + " LIMIT 80"
+            inspection_query = "SELECT * FROM reddit_data " + inspection_conditions + " LIMIT 80"
             strict_data = pd.read_sql(
                 strict_query, self.cnx
-            );
+            )
             inspection_data = pd.read_sql(
                 inspection_query, self.cnx
-            );
+            )
             time.sleep(3)
             return strict_data, inspection_data, True
         except Exception as ex:
@@ -103,9 +103,9 @@ class Mysql:
 
     def workflow_step2(self, strict_data, inspection_data):
         try:
-            strict_data.append(inspection_data)
+            res = strict_data.append(inspection_data)
             time.sleep(3)
-            return strict_data, True
+            return res, True
         except Exception as ex:
             return None, False
 

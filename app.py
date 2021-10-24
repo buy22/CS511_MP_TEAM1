@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-from Neo4j import Neo4j
+#from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -13,15 +13,6 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 workflows = []
-inspection_data = []
-
-
-def get_columns():
-    db = Mysql('team1', 'reddit_data')
-    # db=Neo4j('neo4j')
-    df = db.all_data()
-    cols = df.columns
-    return [{'label': opt, 'value': opt} for opt in cols]
 
 
 app.layout = html.Div([
@@ -43,7 +34,7 @@ app.layout = html.Div([
         html.H3('Section 1: Create Workflow'),
         html.Div(dcc.Dropdown(
             id='attributes_keep',
-            options=get_columns(),
+            options=[],
             value=[], placeholder='select attributes to keep',
             multi=True
         ), style={'height': 50}),
@@ -71,6 +62,7 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 2: Workflows'),
+        dcc.Store(id='cur_id'),
         dcc.Store(id='step0'),
         dcc.Store(id='step1'),
         dcc.Store(id='step2'),
@@ -95,15 +87,20 @@ app.layout = html.Div([
         # for live updating figures
         dcc.Interval(
             id='interval-component',
-            interval=2*1000,  # in milliseconds
+            interval=1500,  # in milliseconds
+            n_intervals=0
+        ),
+        dcc.Interval(
+            id='scheduling',
+            interval=60*1000,
             n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
-    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0),
-                 style={'height': 50, 'display': 'block'}),
+    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
+             style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
-    html.Div(id='workflow_inspect', style={'display': 'none'}),
+    html.Div(id='schedule_text', style={'display': 'none'}),
     html.Div([
         html.H3('Section 3: Query and View Data'),
         # Mysql query section
@@ -129,9 +126,12 @@ app.layout = html.Div([
             id='inspection_data',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
             style_table={'overflowY': 'show'},
-            data=[],
+            row_selectable="multi",
+            selected_rows=[],
+            page_action="native",
             page_current=0,
             page_size=10,
+            data=[],
             css=[{
                     'selector': '.dash-spreadsheet td div',
                     'rule': '''
@@ -142,7 +142,9 @@ app.layout = html.Div([
                     '''
                 }],
         ),
-
+        html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
+                 style={'height': 50, 'display': 'block'}),
+        html.Div(id='workflow_result'),
         # views of various tables/collections
         html.Div([
             html.H6('Select your table/collection'),
@@ -173,8 +175,20 @@ app.layout = html.Div([
 ])
 
 
-
-
+@app.callback(
+    Output('attributes_keep', 'options'),
+    Input('dropdown1', 'value'))
+def get_columns(value):
+    db, df = None, None
+    if value == "MySQL":
+        db = Mysql('team1', 'reddit_data')
+    elif value == "MongoDB":
+        db = MongoDB('mp_team1', 'comments')
+    else:
+        return []
+    df = db.all_data()
+    cols = df.columns
+    return [{'label': opt, 'value': opt} for opt in cols]
 
 
 @app.callback(
@@ -197,17 +211,54 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
             return "Please input a time (in minutes) greater than 0"
         if condition2 is not None and (int(condition2) < 0  or int(condition2) > 1):
             return "Invalid controversiality"
-        wf = Workflow(db, len(workflows), workflow_name, schedule, "Not Started",
+        wf = Workflow(db, len(workflows), workflow_name, schedule, "Idle",
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
         return ""
 
 
 @app.callback(
+    Output('schedule_text', 'children'),
+    Input('scheduling', 'n_intervals'))
+def schedule_workflows(n_intervals):
+    can_start = True
+    execution_list = []
+    for idx, i in enumerate(workflows):
+        if not i.wait_time:
+            continue
+        if i.status != "Idle":
+            can_start = False
+        i.wait_time = max(i.wait_time-1, 0)
+        if i.wait_time == 0:
+            execution_list.append(idx)
+
+    if not can_start:
+        raise PreventUpdate
+    for i in execution_list:
+        w = workflows[i]
+        w.status = "Querying"
+        success = w.workflow_step1(scheduled=True)
+        if not success:
+            raise PreventUpdate
+        w.status = "Data query success"
+        success = w.workflow_step2(scheduled=True)
+        if not success:
+            raise PreventUpdate
+        w.status = "Storing to local database"
+        _, success = w.workflow_step3()
+        if not success:
+            raise PreventUpdate
+        w.status = "Workflow completed"
+        w.wait_time = w.schedule
+    return 'Scheduled workflow executed'
+
+
+@app.callback(
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
-    Input('dropdown1', 'value'))
-def update_table_list(value): # , n_intervals
+    [Input('dropdown1', 'value'),
+     Input('scheduling', 'n_intervals')])
+def update_table_list(value, n_intervals):
     if value == "MySQL":
         db = Mysql('team1', 'reddit_data') # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
@@ -223,15 +274,16 @@ def update_table_list(value): # , n_intervals
         options = []
         return options, None
 
+
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns'),
-     Output('sql_query', 'style'),],
+     Output('sql_query', 'style')],
     [Input('dropdown1', 'value'),
-     Input('dropdown2', 'value')]
-
+     Input('dropdown2', 'value'),
+     Input('workflow_result', 'children')]
     )
-def update_figure_table(value1, value2): # , n_intervals
+def update_figure_table(value1, value2, children): # , n_intervals
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
@@ -240,7 +292,7 @@ def update_figure_table(value1, value2): # , n_intervals
         db = MongoDB('mp_team1', value2)
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
-    else: #
+    else:
         db = Neo4j('neo4j')
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
@@ -275,7 +327,7 @@ def execute_query(n_clicks, query):
         # this will prevent that from occurring until a query is sent.
         raise PreventUpdate
     else:
-        db = Mysql('team1', 'reddit_data') 
+        db = Mysql('team1', 'reddit_data')
         # table does not matter here, so just put in reddit_data as default
         results = db.send_query(query)
         return 'Output: {}'.format(results)
@@ -289,6 +341,8 @@ def execute_query(n_clicks, query):
 def update_workflow_table(n_clicks, n_intervals):
     to_add = []
     for workflow in workflows:
+        if workflow.status == 'Workflow completed':
+            workflow.status = 'Idle'
         to_add.append(workflow.to_list())
     columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
     df = pd.DataFrame(to_add, columns=columns)
@@ -339,14 +393,28 @@ def step1(row):
 
 @app.callback(
     [Output('inspection_data', 'data'),
-     Output('inspection_data', 'columns')],
-    Input('step1', 'data'))
-def update_inspect(json_data):
+     Output('inspection_data', 'columns'),
+     Output('cur_id', 'data')],
+    [Input('step1', 'data'),
+     Input('dropdown1', 'value'),
+     Input('finish_inspection', 'n_clicks')])
+def update_inspect(json_data, value, n_clicks):
+    if n_clicks:
+        return [], [], pd.DataFrame().to_json(date_format='iso', orient='split')
     if json_data:
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
-        db = Mysql('team1', 'reddit_data')
-        cols = db.all_data().columns
+        db, df = None, None
+        if value == "MySQL":
+            db = Mysql('team1', 'reddit_data')
+            df = db.all_data()
+        elif value == "MongoDB":
+            db = MongoDB('mp_team1', 'comments')
+            df = db.all_data()
+        else:
+            db = Neo4j('neo4j')
+            df = db.all_data()
+        cols = df.columns
         inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
         w = None
@@ -356,9 +424,40 @@ def update_inspect(json_data):
                 break
         w.status = "Human inspection(if qualify)"
         return (inspect_data.to_dict('records'),
-                [{'name': i, 'id': i}for i in inspect_data.columns])
+                [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
+                pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'))
     else:
-        return pd.DataFrame().to_dict('records'), []
+        raise PreventUpdate
+
+
+@app.callback(
+    Output('workflow_result', 'children'),
+    Input('finish_inspection', 'n_clicks'),
+    [State('inspection_data', 'selected_rows'),
+     State('inspection_data', 'data'),
+     State('cur_id', 'data')])
+def finish_inspection(n_clicks, selected_rows, data, cur_id):
+    if n_clicks == 0:
+        raise PreventUpdate
+    res = []
+    if not data:
+        return 'There is no data inspection in progress'
+    for i in selected_rows:
+        res.append(data[i])
+    if cur_id:
+        idx = pd.read_json(cur_id, orient='split')['id'][0]
+        workflows[idx].retrieve_inspect_data(res)
+        workflows[idx].status = 'Storing to local database'
+        success = workflows[idx].workflow_step2()
+        if success:
+            _, success_step3 = workflows[idx].workflow_step3()
+            if success_step3:
+                workflows[idx].status = 'Workflow completed'
+                return 'Workflow {} completed'.format(str(idx))
+            else:
+                raise Exception
+        else:
+            raise Exception
 
 
 @app.callback(
