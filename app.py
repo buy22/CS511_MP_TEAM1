@@ -6,6 +6,7 @@ from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
+import time
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 # this css is not good
@@ -51,7 +52,7 @@ app.layout = html.Div([
         html.Br(),
         html.Div(dcc.Input(id='condition1', type='number', placeholder="score greater than?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality less than?"),
+        html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality (0 or 1)"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
         html.Div(dcc.Input(id='condition3', placeholder="which author?"),
                  style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
@@ -70,6 +71,9 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 2: Workflows'),
+        dcc.Store(id='step0'),
+        dcc.Store(id='step1'),
+        dcc.Store(id='step2'),
         dash_table.DataTable(
             id='workflow_table',
             columns=[
@@ -93,6 +97,7 @@ app.layout = html.Div([
     html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0),
                  style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
+    html.Div(id='workflow_inspect', style={'display': 'none'}),
     html.Div([
         html.H3('Section 3: Query and View Data'),
         # Mysql query section
@@ -189,6 +194,8 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
+        if condition2 is not None and (int(condition2) < 0  or int(condition2) > 1):
+            return "Invalid controversiality"
         wf = Workflow(db, len(workflows), workflow_name, schedule, "Not Started",
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
@@ -280,8 +287,11 @@ def execute_query(n_clicks, query):
 @app.callback(
     [Output('workflow_table', 'data'),
      Output('workflow_table', 'columns')],
-    [Input('create_workflow', 'n_clicks')])
-def update_workflow_table(n_clicks): # should update each time a new workflow is made
+    [Input('create_workflow', 'n_clicks'),
+     Input('workflow_started', 'children'),
+     Input('workflow_inspect', 'children'),
+     Input('step1', 'data')])
+def update_workflow_table(n_clicks, children1, children2, step1): # should update each time a new workflow is made
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
@@ -291,54 +301,86 @@ def update_workflow_table(n_clicks): # should update each time a new workflow is
 
 
 @app.callback(
-    [Output('workflow_click_data', 'children'),
-     Output('start_workflow', 'style')],
+    [Output('workflow_started', 'children'),
+     Output('step0', 'data')],
+    Input('start_workflow', 'n_clicks'),
+    [State('workflow_table', 'active_cell')])
+def initiate_selected_workflow(n_clicks, active_cell):
+    if n_clicks == 0:
+        raise PreventUpdate
+    else:
+        if active_cell:
+            row = active_cell['row']
+            w = None
+            for wf in workflows:
+                if wf.id == row:
+                    w = wf
+                    break
+            w.status = "Querying"
+            return None, w.id
+        else:
+            return None, None
+
+
+@app.callback(
+    Output('step1', 'data'),
+    Input('step0', 'data'))
+def step1(row):
+    w = None
+    for wf in workflows:
+        if wf.id == row:
+            w = wf
+            break
+    if not w:
+        return
+    strict_data, inspect_data, success = w.workflow_step1()
+    if success:
+        w.status = "Data query success"
+    else:
+        w.status = "Data query failed"
+    return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
+                date_format='iso', orient='split')
+
+
+@app.callback(
+    [Output('inspection_data', 'data'),
+     Output('inspection_data', 'columns'),
+     Output('workflow_inspect', 'children')],
+    Input('step1', 'data'))
+def update_inspect(json_data): # , n_intervals
+    if json_data:
+        data = pd.read_json(json_data, orient='split')
+        _, inspect_data, idx = data['strict'], data['inspect'], data['id']
+        db = Mysql('team1', 'reddit_data')
+        cols = db.all_data().columns
+        inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
+        idx = idx[0]
+        time.sleep(3)
+        for wf in workflows:
+            if wf.id == idx:
+                break
+            wf.status = "Human inspection(if qualify)"
+        return (inspect_data.to_dict('records'),
+                [{'name': i, 'id': i}for i in inspect_data.columns],
+                None)
+    else:
+        return pd.DataFrame().to_dict('records'), [], None
+
+
+@app.callback(
+    Output('workflow_click_data', 'children'),
     [Input('workflow_table', 'active_cell')],
-    [State('workflow_table', 'data')]
-)
+    [State('workflow_table', 'data')])
 def display_workflow_click_data(active_cell, table_data):
     if active_cell:
         cell = json.dumps(active_cell, indent=2)
         row = active_cell['row']
         value = table_data[row]
         out = 'Selected workflow: ' + '%s' % value
-        return out, {'height': 50, 'display': 'block'}
+        return out
     else:
-        return 'no workflow selected', {'height': 50, 'display': 'none'}
+        return 'no workflow selected'
 
-
-@app.callback(
-    Output('workflow_started', 'children'),
-    [Input('start_workflow', 'n_clicks'),
-     Input('workflow_table', 'active_cell')]
-)
-def initiate_selected_workflow(n_clicks, active_cell):
-    if n_clicks == 0:
-        raise PreventUpdate
-    else:
-        row = active_cell['row']
-        for wf in workflows:
-            if wf.id == row:
-                break
-        # should probably call workflow_step1() in this method too
-        wf.status = "Started"
-        return ""
-
-'''
-def create_table(dff):
-    g = go.Figure(data=[go.Table(
-        header=dict(values=['author', 'controversiality',
-                            'created_utc', 'distinguished', 'retrieved_on', 'score', 'subreddit', 'body'],
-                    fill_color='paleturquoise',
-                    align='center'),
-        cells=dict(values=[dff.author, dff.controversiality, dff.created_utc, dff.distinguished, dff.retrieved_on,
-                           dff.score, dff.subreddit, dff.body],
-                   fill_color='lavender',
-                   align='left'))
-    ])
-    #g = ff.create_table(dff)
-    return g
-'''
 
 if __name__ == '__main__':
     app.run_server(debug=True)

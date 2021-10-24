@@ -61,7 +61,7 @@ class Mysql:
         if cond[1] and cond[1] is not None:
             if already_started_condition:
                 strict_conditions += " AND controversiality < " + str(cond[1])
-                inspection_conditions += " AND controversiality < " + str(cond[1] + 2)
+                inspection_conditions += " AND controversiality < " + str(cond[1])
             else:
                 already_started_condition = True
                 strict_conditions = "WHERE controversiality < " + str(cond[1])
