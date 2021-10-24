@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-#from Neo4j import Neo4j
+from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
