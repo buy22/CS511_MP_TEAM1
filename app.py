@@ -68,6 +68,9 @@ app.layout = html.Div([
     ]),
     html.Div([
         html.H3('Section 2: Workflows'),
+        dcc.Store(id='step0'),
+        dcc.Store(id='step1'),
+        dcc.Store(id='step2'),
         dash_table.DataTable(
             id='workflow_table',
             columns=[
@@ -273,8 +276,9 @@ def execute_query(n_clicks, query):
     [Output('workflow_table', 'data'),
      Output('workflow_table', 'columns')],
     [Input('create_workflow', 'n_clicks'),
-     Input('workflow_started', 'children')])
-def update_workflow_table(n_clicks, children): # should update each time a new workflow is made
+     Input('workflow_started', 'children'),
+     Input('step1', 'data')])
+def update_workflow_table(n_clicks, children, step1): # should update each time a new workflow is made
     to_add = []
     for workflow in workflows:
         to_add.append(workflow.to_list())
@@ -284,7 +288,8 @@ def update_workflow_table(n_clicks, children): # should update each time a new w
 
 
 @app.callback(
-    Output('workflow_started', 'children'),
+    [Output('workflow_started', 'children'),
+     Output('step0', 'data')],
     Input('start_workflow', 'n_clicks'),
     [State('workflow_table', 'active_cell'),
      State('dropdown1', 'value')])
@@ -298,7 +303,23 @@ def initiate_selected_workflow(n_clicks, active_cell, value):
                 break
         # should probably call workflow_step1() in this method too
         wf.status = "Started"
-        return None
+        return None, wf.id
+
+
+@app.callback(
+    Output('step1', 'data'),
+    Input('step0', 'data'))
+def step1(row):
+    for wf in workflows:
+        if wf.id == row:
+            break
+    strict_data, inspect_data, success = wf.workflow_step1()
+    if success:
+        wf.status = "Data query success"
+    else:
+        wf.status = "Data query failed"
+    return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data}]).to_json(
+                date_format='iso', orient='split')
 
 
 @app.callback(
