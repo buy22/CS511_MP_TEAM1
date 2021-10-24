@@ -15,7 +15,7 @@ class Neo4j:
 
     def all_data(self):
         query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN n.body,n.score,n.controversiality,m.name LIMIT 25"
-        data=self.session.run(query).data()
+        data=pd.DataFrame(self.session.run(query).data())
         return data
 
     def workflow_step1(self, cond):
