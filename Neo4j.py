@@ -70,8 +70,8 @@ class Neo4j:
             print(strict_query)
             print(inspection_query)
             print(self.session.run(strict_query).data())
-            strict_data = pd.DataFrame(self.session.run(strict_query).data())
-            inspection_data = pd.DataFrame(self.session.run(inspection_query).data())
+            strict_data = self.convert_to_dataframe(self.session.run(strict_query).data())
+            inspection_data = self.convert_to_dataframe(self.session.run(inspection_query).data())
             time.sleep(3)
             return strict_data, inspection_data, True
         except Exception as ex:
