@@ -15,13 +15,6 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 workflows = []
 
 
-def get_columns():
-    db = Mysql('team1', 'reddit_data')
-    df = db.all_data()
-    cols = df.columns
-    return [{'label': opt, 'value': opt} for opt in cols]
-
-
 app.layout = html.Div([
     dcc.Store(id='database'),
     html.Div([
@@ -41,7 +34,7 @@ app.layout = html.Div([
         html.H3('Section 1: Create Workflow'),
         html.Div(dcc.Dropdown(
             id='attributes_keep',
-            options=get_columns(),
+            options=[],
             value=[], placeholder='select attributes to keep',
             multi=True
         ), style={'height': 50}),
@@ -176,6 +169,22 @@ app.layout = html.Div([
         html.Div(id='click_data', style={'whiteSpace': 'pre-wrap', 'height': 200}),
     ])
 ])
+
+
+@app.callback(
+    Output('attributes_keep', 'options'),
+    Input('dropdown1', 'value'))
+def get_columns(value):
+    db, df = None, None
+    if value == "MySQL":
+        db = Mysql('team1', 'reddit_data')
+    elif value == "MongoDB":
+        db = MongoDB('mp_team1', 'comments')
+    else:
+        return []
+    df = db.all_data()
+    cols = df.columns
+    return [{'label': opt, 'value': opt} for opt in cols]
 
 
 @app.callback(
