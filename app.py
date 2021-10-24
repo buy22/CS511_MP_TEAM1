@@ -463,7 +463,6 @@ def update_inspect(json_data, n_clicks, value):
             inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
         if workflows[idx].status == 'Storing to local database':
-            workflows[idx].status = "Human inspection (if qualify)"
             return ([], [],
                     pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
         else:
@@ -491,14 +490,15 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
             res.append(data[i])
     if cur_id:
         idx = pd.read_json(cur_id, orient='split')['id'][0]
-        if workflows[idx].status == 'Idle':
+        if workflows[idx].status != 'Data query success':
             return 'No inspection in progress', {'row': 0, 'column': 0, 'column_id': 'ID'}, 0
+        print(workflows[idx].status)
         workflows[idx].retrieve_inspect_data(res)
         workflows[idx].status = 'Storing to local database'
         success = workflows[idx].workflow_step2()
         if success:
-            _, success_step3 = workflows[idx].workflow_step3()
             workflows[idx].status = 'Workflow completed'
+            _, success_step3 = workflows[idx].workflow_step3()
             row, button = 0, 0
             if workflows[idx].dependency:
                 row = workflows[idx].dependency
