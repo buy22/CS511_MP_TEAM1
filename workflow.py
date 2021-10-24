@@ -4,7 +4,7 @@ from mongoDB import MongoDB
 
 class Workflow:
     def __init__(self, db, id, name, schedule=None, status="Idle", conditions=[], attributes=[],
-                 dependency=None, strict_data=None, inspect_data=None):
+                 dependency=None, strict_data=None):
         self.id = id
         self.name = name
         if schedule:
@@ -25,6 +25,7 @@ class Workflow:
         self.inspect_data = None
         self.all = None
         self.db = db
+        self.wait_time = schedule
 
     def __str__(self):
         return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}'.format(
@@ -36,7 +37,7 @@ class Workflow:
     def retrieve_inspect_data(self, inspected):
         self.inspect_data = inspected
 
-    def workflow_step1(self):
+    def workflow_step1(self, scheduled=False):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
@@ -44,16 +45,21 @@ class Workflow:
         else:
             return None
         res = con.workflow_step1(self.conditions)
-        self.strict_data, self.inspect_data, _ = res
+        if scheduled:
+            self.strict_data, _, _ = res
+        else:
+            self.strict_data, self.inspect_data, _ = res
         return res
 
-    def workflow_step2(self):
+    def workflow_step2(self, scheduled=False):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
             con = MongoDB('mp_team1', 'comments')
         else:
             return None
+        if scheduled:
+            self.inspect_data = None
         self.all, success = con.workflow_step2(self.strict_data, self.inspect_data)
         return success
 

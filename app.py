@@ -100,7 +100,7 @@ app.layout = html.Div([
     html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
              style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
-    html.Div(id='workflow_inspect', style={'display': 'none'}),
+    html.Div(id='schedule_text', style={'display': 'none'}),
     html.Div([
         html.H3('Section 3: Query and View Data'),
         # Mysql query section
@@ -211,10 +211,46 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
             return "Please input a time (in minutes) greater than 0"
         if condition2 is not None and (int(condition2) < 0  or int(condition2) > 1):
             return "Invalid controversiality"
-        wf = Workflow(db, len(workflows), workflow_name, schedule, "Not Started",
+        wf = Workflow(db, len(workflows), workflow_name, schedule, "Idle",
                       [condition1, condition2, condition3, condition4], attributes, dependency)
         workflows.append(wf)
         return ""
+
+
+@app.callback(
+    Output('schedule_text', 'children'),
+    Input('scheduling', 'n_intervals'))
+def schedule_workflows(n_intervals):
+    can_start = True
+    execution_list = []
+    for idx, i in enumerate(workflows):
+        if not i.wait_time:
+            continue
+        if i.status != "Idle":
+            can_start = False
+        i.wait_time = max(i.wait_time-1, 0)
+        if i.wait_time == 0:
+            execution_list.append(idx)
+
+    if not can_start:
+        raise PreventUpdate
+    for i in execution_list:
+        w = workflows[i]
+        w.status = "Querying"
+        success = w.workflow_step1(scheduled=True)
+        if not success:
+            raise PreventUpdate
+        w.status = "Data query success"
+        success = w.workflow_step2(scheduled=True)
+        if not success:
+            raise PreventUpdate
+        w.status = "Storing to local database"
+        _, success = w.workflow_step3()
+        if not success:
+            raise PreventUpdate
+        w.status = "Workflow completed"
+        w.wait_time = w.schedule
+    return 'Scheduled workflow executed'
 
 
 @app.callback(
