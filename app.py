@@ -424,7 +424,7 @@ def update_inspect(json_data, value, n_clicks):
             if wf.id == idx:
                 w = wf
                 break
-        w.status = "Human inspection(if qualify)"
+        w.status = "Human inspection (if qualify)"
         return (inspect_data.to_dict('records'),
                 [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
                 pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'))
