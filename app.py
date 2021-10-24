@@ -190,7 +190,7 @@ def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
-        if int(condition4) < 0  or int(condition4) > 1:
+        if condition2 is not None and (int(condition2) < 0  or int(condition2) > 1):
             return "Invalid controversiality"
         wf = Workflow(db, len(workflows), workflow_name, schedule, "Not Started",
                       [condition1, condition2, condition3, condition4], attributes, dependency)
@@ -292,10 +292,9 @@ def update_workflow_table(n_clicks, children, step1): # should update each time 
 @app.callback(
     [Output('workflow_started', 'children'),
      Output('step0', 'data')],
-    Input('start_workflow', 'n_clicks'),
-    [State('workflow_table', 'active_cell'),
-     State('dropdown1', 'value')])
-def initiate_selected_workflow(n_clicks, active_cell, value):
+     Input('start_workflow', 'n_clicks'),
+    [State('workflow_table', 'active_cell')])
+def initiate_selected_workflow(n_clicks, active_cell):
     if n_clicks == 0:
         raise PreventUpdate
     else:
@@ -303,8 +302,7 @@ def initiate_selected_workflow(n_clicks, active_cell, value):
         for wf in workflows:
             if wf.id == row:
                 break
-        # should probably call workflow_step1() in this method too
-        wf.status = "Started"
+        wf.status = "Querying"
         return None, wf.id
 
 
