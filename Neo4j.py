@@ -3,12 +3,13 @@ import pandas as pd
 import time
 
 class Neo4j:
-    def __init__(self,db):
+    def __init__(self,db,label='Reddit,Author'):
         uri = "bolt://localhost:7687"
         user = "neo4j"
         password = "123456"
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.session = self.driver.session(database=db)
+        self.label=label
 
     def close(self):
         self.session.close()
@@ -23,7 +24,7 @@ class Neo4j:
 
     def all_data(self):
         # query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN n.body,n.score,n.controversiality,m.name LIMIT 25"
-        query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit) RETURN Reddit,Author LIMIT 25"
+        query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) RETURN " + self.label + " LIMIT 25"
         data= self.convert_to_dataframe(self.session.run(query).data())
         return data
 
@@ -109,5 +110,5 @@ class Neo4j:
 
         G = nx.random_geometric_graph(200, 0.125)
 
-a=Neo4j('neo4j')
-t=a.find_all_collections()
+a=Neo4j('neo4j','Reddit')
+t=a.all_data()
