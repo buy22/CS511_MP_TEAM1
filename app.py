@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-from Neo4j import Neo4j
+#from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -430,7 +430,9 @@ def update_inspect(json_data, n_clicks, value):
 
 
 @app.callback(
-    Output('workflow_result', 'children'),
+    [Output('workflow_result', 'children'),
+     Output('workflow_table', 'active_cell'),
+     Output('start_workflow', 'n_clicks')],
     Input('finish_inspection', 'n_clicks'),
     [State('inspection_data', 'selected_rows'),
      State('inspection_data', 'data'),
@@ -445,7 +447,7 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
     if cur_id:
         idx = pd.read_json(cur_id, orient='split')['id'][0]
         if workflows[idx].status == 'Idle':
-            return 'No inspection in progress'
+            return 'No inspection in progress', {'row': 0, 'column': 0, 'column_id': 'ID'}, 0
         workflows[idx].retrieve_inspect_data(res)
         workflows[idx].status = 'Storing to local database'
         success = workflows[idx].workflow_step2()
@@ -453,7 +455,11 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
             _, success_step3 = workflows[idx].workflow_step3()
             if success_step3:
                 workflows[idx].status = 'Workflow completed'
-                return 'Workflow {} completed'.format(str(idx))
+                row, button = 0, 0
+                if workflows[idx].dependency:
+                    row = workflows[idx].dependency
+                    button = 1
+                return 'Workflow {} completed'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
             else:
                 raise Exception
         else:
