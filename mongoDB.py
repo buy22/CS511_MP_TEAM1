@@ -4,10 +4,16 @@ import time
 
 
 class MongoDB:
-    def __init__(self, db, collection):
+    def __init__(self, db, collection=None):
         self.client = MongoClient("localhost", 27017, maxPoolSize=50)
         self.db = self.client[db]
-        self.collection = self.db[collection]
+        if collection:
+            self.collection = self.db[collection]
+        else:
+            self.collection = None
+
+    def find_all_collections(self):
+        return [collection for collection in self.db.collection_names()]
 
     def all_data(self):
         # data = pd.DataFrame(list(self.collection.find()))
