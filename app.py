@@ -2,7 +2,7 @@ from dash import Dash, dcc, html, Input, Output, State, dash_table
 from dash.exceptions import PreventUpdate
 from Mysql import Mysql
 from mongoDB import MongoDB
-#from Neo4j import Neo4j
+from Neo4j import Neo4j
 from workflow import Workflow
 import pandas as pd
 import json
@@ -185,7 +185,7 @@ def get_columns(value):
     elif value == "MongoDB":
         db = MongoDB('mp_team1', 'comments')
     else:
-        return []
+        db = Neo4j('neo4j')
     df = db.all_data()
     cols = df.columns
     return [{'label': opt, 'value': opt} for opt in cols]
@@ -271,8 +271,10 @@ def update_table_list(value, n_intervals):
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
     else: # Neo4j - no tables
-        options = []
-        return options, None
+        db = Neo4j('neo4j')
+        opts = db.find_all_collections()
+        options = [{'label': opt, 'value': opt} for opt in opts]
+        return options, options[0]['value']
 
 
 @app.callback(
