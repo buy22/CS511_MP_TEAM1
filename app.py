@@ -240,22 +240,28 @@ def schedule_workflows(n_intervals):
     if not can_start:
         raise PreventUpdate
     for i in execution_list:
-        w = workflows[i]
-        w.status = "Querying"
-        success = w.workflow_step1(scheduled=True)
-        if not success:
-            raise PreventUpdate
-        w.status = "Data query success"
-        success = w.workflow_step2(scheduled=True)
-        if not success:
-            raise PreventUpdate
-        w.status = "Storing to local database"
-        _, success = w.workflow_step3()
-        if not success:
-            raise PreventUpdate
-        w.status = "Workflow completed"
-        w.wait_time = w.schedule
+        automation(i)
     return 'Scheduled workflow executed'
+
+
+def automation(i):
+    w = workflows[i]
+    w.status = "Querying"
+    success = w.workflow_step1(scheduled=True)
+    if not success:
+        raise PreventUpdate
+    w.status = "Data query success"
+    success = w.workflow_step2(scheduled=True)
+    if not success:
+        raise PreventUpdate
+    w.status = "Storing to local database"
+    _, success = w.workflow_step3()
+    if not success:
+        raise PreventUpdate
+    w.status = "Workflow completed"
+    w.wait_time = w.schedule
+    if w.dependency:
+        automation(w.dependency)
 
 
 @app.callback(
