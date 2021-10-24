@@ -14,11 +14,12 @@ class Neo4j:
         self.session.close()
 
     def convert_to_dataframe(self,neo4j_graph_data):
-        df_list=[pd.DataFrame.from_dict({(i, j): data[i][j]
+        df_list=pd.concat([pd.DataFrame.from_dict({(i, j): data[i][j]
                                     for i in data.keys()
                                     for j in data[i].keys()},
-                                   orient='index').transpose() for data in neo4j_graph_data]
-        return pd.concat(df_list)
+                                   orient='index').transpose() for data in neo4j_graph_data])
+        df_list.columns = ['_'.join(col) for col in df_list.columns.values]
+        return df_list
 
     def all_data(self):
         # query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN n.body,n.score,n.controversiality,m.name LIMIT 25"
@@ -72,6 +73,10 @@ class Neo4j:
             print(self.session.run(strict_query).data())
             strict_data = self.convert_to_dataframe(self.session.run(strict_query).data())
             inspection_data = self.convert_to_dataframe(self.session.run(inspection_query).data())
+            # remove  duplicate
+            cond = inspection_data['Reddit_redditID'].isin(strict_data['Reddit_redditID'])
+            inspection_data.drop(inspection_data[cond].index, inplace=True)
+
             time.sleep(3)
             return strict_data, inspection_data, True
         except Exception as ex:
@@ -104,5 +109,5 @@ class Neo4j:
 
         G = nx.random_geometric_graph(200, 0.125)
 
-# a=Neo4j('neo4j')
-# a.all_data()
+a=Neo4j('neo4j')
+t=a.all_data()
