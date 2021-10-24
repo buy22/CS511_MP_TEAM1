@@ -3,7 +3,7 @@ from mongoDB import MongoDB
 
 
 class Workflow:
-    def __init__(self, db, id, name, schedule=None, status="Not Started", conditions=[], attributes=[],
+    def __init__(self, db, id, name, schedule=None, status="Idle", conditions=[], attributes=[],
                  dependency=None, strict_data=None, inspect_data=None):
         self.id = id
         self.name = name

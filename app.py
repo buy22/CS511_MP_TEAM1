@@ -87,7 +87,7 @@ app.layout = html.Div([
         # for live updating figures
         dcc.Interval(
             id='interval-component',
-            interval=1*1000,  # in milliseconds
+            interval=1500,  # in milliseconds
             n_intervals=0
         )
     ]),
@@ -299,6 +299,8 @@ def execute_query(n_clicks, query):
 def update_workflow_table(n_clicks, n_intervals):
     to_add = []
     for workflow in workflows:
+        if workflow.status == 'Workflow completed':
+            workflow.status = 'Idle'
         to_add.append(workflow.to_list())
     columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words']
     df = pd.DataFrame(to_add, columns=columns)
