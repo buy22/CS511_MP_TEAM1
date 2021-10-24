@@ -16,7 +16,8 @@ session.run("Match () Return 1 Limit 1")
 ql='''
 call apoc.load.json('sample_data.json')  yield value
 unwind value as v
-merge (reddit:Reddit{redditID:v.id}) on create set reddit.body=v.body,reddit.permanentlink=v.permalink, reddit.body=v.body, reddit.distinguished=v.distinguished,reddit.score=v.score,reddit.stickied=v.stickied,reddit.controversiality=v.controversiality,reddit.edited=v.edited, reddit.body=v.body,  reddit.link_id=v.link_i
+merge (reddit:Reddit{redditID:v.id}) on create set reddit.body=v.body,reddit.score=v.score,reddit.controversiality=v.controversiality,reddit.edited=v.edited,
+reddit.permanentlink=v.permalink, reddit.distinguished=v.distinguished,reddit.stickied=v.stickied,  reddit.link_id=v.link_i
 // reddit.can_gild=v.can_gild, reddit.gilded=v.gilded,
 // reddit.retrieved_on=v.retrieved_on,reddit.created_utc=v.created_utc,
 merge (author:Author {name:v.author}) on create set author.author_flair_text=v.author_flair_text,author.author_flair_css_class=v.author_flair_css_class
