@@ -1,4 +1,5 @@
 import mysql.connector
+from sqlalchemy import create_engine
 import pandas as pd
 import time
 
@@ -9,6 +10,7 @@ class Mysql:
         self.cursor = None
         self.database = db
         self.table = table
+        self.counter = 0
 
     def connect(self):
         try:
@@ -96,6 +98,10 @@ class Mysql:
             inspection_data = pd.read_sql(
                 inspection_query, self.cnx
             )
+            
+            cond = inspection_data['id'].isin(strict_data['id'])
+            inspection_data.drop(inspection_data[cond].index, inplace = True) # remove any duplicate rows
+            
             time.sleep(3)
             return strict_data, inspection_data, True
         except Exception as ex:
@@ -112,8 +118,11 @@ class Mysql:
     def workflow_step3(self, data, attributes, table):
         try:
             df = data[data.columns.intersection(attributes)]
-            collection = self.db[table]
-            x = collection.insert_many(df.to_dict('records'))
+            name = "workflow_table" + str(self.counter)
+            self.counter += 1
+            # df.to_sql only seems to support SQLAlchemy engines?
+            engine = create_engine("mysql://cs511:databaesCS511@localhost/{db}".format(db=self.database))
+            df.to_sql(name, engine, index=False, if_exists='replace') # convert to new table, drop the table if it exists already
             time.sleep(3)
             return df, True
         except Exception as ex:
