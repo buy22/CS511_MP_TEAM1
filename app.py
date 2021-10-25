@@ -8,10 +8,19 @@ import pandas as pd
 import json
 import time
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-# this css is not good
-app = Dash(__name__, external_stylesheets=external_stylesheets)
+# external CSS stylesheets
+external_stylesheets = [
+    'https://codepen.io/chriddyp/pen/bWLwgP.css',
+    {
+        'href': 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css',
+        'rel': 'stylesheet',
+        'integrity': 'sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO',
+        'crossorigin': 'anonymous'
+    }
+]
 
+
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 workflows = []
 
 
@@ -31,7 +40,7 @@ app.layout = html.Div([
         )
     ]),
     html.Div([
-        html.H3('Section 1: Create Workflow'),
+        html.H3('Create Workflow'),
         html.Div(dcc.Dropdown(
             id='attributes_keep',
             options=[],
@@ -55,13 +64,14 @@ app.layout = html.Div([
                  style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
         html.Div(dcc.Input(id='workflow_dependency', type='number', placeholder="execute after which workflow?(id)"),
                  style={'display': 'flex', 'float': 'right', 'height': 30, 'margin-right': 10}),
-        html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0),
+        html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0,
+                             style={'background-color': 'black', 'color': 'white'}),
                  style={'margin-top': 50, 'height': 50}),
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
     html.Div([
-        html.H3('Section 2: Workflows'),
+        html.H3('Workflows Table'),
         dcc.Store(id='cur_id'),
         dcc.Store(id='step0'),
         dcc.Store(id='step1'),
@@ -70,6 +80,7 @@ app.layout = html.Div([
             id='workflow_table',
             columns=[
                 {'name': 'ID', 'id': 'workflow_table_id'},
+                {'name': 'Database', 'id': 'workflow_table_db'},
                 {'name': 'Name', 'id': 'workflow_table_name'},
                 {'name': 'Schedule', 'id': 'workflow_table_schedule'},
                 {'name': 'Status', 'id': 'workflow_table_status'},
@@ -94,6 +105,11 @@ app.layout = html.Div([
             id='scheduling',
             interval=60*1000,
             n_intervals=0
+        ),
+        dcc.Interval(
+            id='update_table',
+            interval=150*1000,
+            n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
@@ -102,26 +118,9 @@ app.layout = html.Div([
     html.Div(id='workflow_started', style={'display': 'none'}),
     html.Div(id='schedule_text', style={'display': 'none'}),
     html.Div([
-        html.H3('Section 3: Query and View Data'),
-        # Mysql query section
-        html.Div([
-            html.Div(dcc.Textarea(
-                    id='custom_query',
-                    placeholder='Enter your MySQL query here...',
-                    style={'width': '80%', 'height': 150},
-                ),
-                 style=dict(display='block', justifyContent='center')),
-            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
-                     style=dict(display='block', justifyContent='center')),
-            html.Div(
-                html.H4('Query Results')
-                , style={'display': 'block'}
-            ),
-            html.Div(id='query_result',
-                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
-            html.Br()], id='sql_query', style={'display': 'block'}),
-
+        html.H3('Manage, View and Query Data'),
         # data requiring inspection in incoming workflows
+        html.H4('Data Inspections Table'),
         dash_table.DataTable(
             id='inspection_data',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -142,17 +141,39 @@ app.layout = html.Div([
                     '''
                 }],
         ),
+        html.Div(id='inspection_click_data', style={'whiteSpace': 'pre-wrap'}),
         html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
                  style={'height': 50, 'display': 'block'}),
         html.Div(id='workflow_result'),
+
+        # Mysql query section
+        html.Div([
+            html.H4('Query for MySQL'),
+            html.Div(dcc.Textarea(
+                    id='custom_query',
+                    placeholder='Enter your MySQL query here...',
+                    style={'width': '80%', 'height': 150},
+                ),
+                 style=dict(display='block', justifyContent='center')),
+            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
+                     style=dict(display='block', justifyContent='center')),
+            html.Div(
+                html.H4('Query Results')
+                , style={'display': 'block'}
+            ),
+            html.Div(id='query_result',
+                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
+            html.Br()], id='sql_query', style={'display': 'block'}),
+
         # views of various tables/collections
         html.Div([
-            html.H6('Select your table/collection/lable'),
+            html.H6('Select your table/collection/label'),
             dcc.Dropdown(
                 id='dropdown2',
                 options=[], style={'width': '50%'}
             )
         ], style={'height': 100}),
+        html.H4('Database View'),
         dash_table.DataTable(
             id='live_update_table',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -268,7 +289,7 @@ def automation(i):
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
     [Input('dropdown1', 'value'),
-     Input('scheduling', 'n_intervals'),
+     Input('update_table', 'n_intervals'),
      Input('workflow_result', 'children')])
 def update_table_list(value, n_intervals, children):
     if value == "MySQL":
@@ -328,6 +349,22 @@ def display_click_data(active_cell, table_data):
 
 
 @app.callback(
+    Output('inspection_click_data', 'children'),
+    Input('inspection_data', 'active_cell'),
+    State('inspection_data', 'data'))
+def display_insepect_click_data(active_cell, table_data):
+    if active_cell:
+        cell = json.dumps(active_cell, indent=2)
+        row = active_cell['row']
+        col = active_cell['column_id']
+        value = table_data[row][col]
+        out = '%s' % value
+    else:
+        out = 'no cell selected/no data in the table'
+    return out
+
+
+@app.callback(
     Output('query_result', 'children'),
     Input('submit_query', 'n_clicks'),
     State('custom_query', 'value')
@@ -356,7 +393,7 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
+    columns = ['ID', 'Database', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
@@ -426,11 +463,12 @@ def update_inspect(json_data, n_clicks, value):
             db = Neo4j('neo4j','Reddit')
             df = db.all_data()
         cols = df.columns
-        inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
+        if type(inspect_data[0]) != list:
+            inspect_data = pd.DataFrame(data=[], columns=cols)
+        else:
+            inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         idx = idx[0]
-        print(workflows[idx].status)
         if workflows[idx].status == 'Storing to local database':
-            workflows[idx].status = "Human inspection (if qualify)"
             return ([], [],
                     pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
         else:
@@ -458,22 +496,23 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
             res.append(data[i])
     if cur_id:
         idx = pd.read_json(cur_id, orient='split')['id'][0]
-        if workflows[idx].status == 'Idle':
+        if workflows[idx].status != 'Data query success':
             return 'No inspection in progress', {'row': 0, 'column': 0, 'column_id': 'ID'}, 0
+        print(workflows[idx].status)
         workflows[idx].retrieve_inspect_data(res)
         workflows[idx].status = 'Storing to local database'
         success = workflows[idx].workflow_step2()
         if success:
+            workflows[idx].status = 'Workflow completed'
             _, success_step3 = workflows[idx].workflow_step3()
+            row, button = 0, 0
+            if workflows[idx].dependency:
+                row = workflows[idx].dependency
+                button = 1
             if success_step3:
-                workflows[idx].status = 'Workflow completed'
-                row, button = 0, 0
-                if workflows[idx].dependency:
-                    row = workflows[idx].dependency
-                    button = 1
                 return 'Workflow {} completed'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
             else:
-                raise Exception
+                return 'Workflow {} returned empty result. No write to database'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
         else:
             raise Exception
 
