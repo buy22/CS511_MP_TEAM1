@@ -464,6 +464,8 @@ def update_inspect(json_data, n_clicks):
         else:
             db = Neo4j('neo4j', 'Reddit')
             df = db.all_data()
+        if type(workflows[idx].inspect_data) != list:
+            df = workflows[idx].inspect_data
         cols = df.columns
         if type(inspect_data[0]) != list:
             inspect_data = pd.DataFrame(data=[], columns=cols)
