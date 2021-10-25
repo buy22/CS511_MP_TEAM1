@@ -328,7 +328,7 @@ def update_figure_table(value1, value2, children):
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else:
         db = Neo4j('neo4j',value2)
-        df = db.all_data()
+        df = db.all_data(value2)
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
 
 
