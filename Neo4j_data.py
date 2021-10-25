@@ -19,7 +19,7 @@ DETACH DELETE n
 '''
 session.run(ql)
 
-#import data
+#import data: you have to move sample_data.json into your neo4j's import path first
 ql='''
 call apoc.load.json('sample_data.json')  yield value
 unwind value as v
