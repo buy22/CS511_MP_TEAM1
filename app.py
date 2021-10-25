@@ -465,11 +465,7 @@ def update_inspect(json_data, n_clicks):
             db = Neo4j('neo4j', 'Reddit')
             df = db.all_data()
         cols = df.columns
-        if type(inspect_data[0]) != list:
-            inspect_data = pd.DataFrame(data=[], columns=cols)
-        else:
-            inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
-
+        inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
         if workflows[idx].status == 'Storing to local database':
             return ([], [],
                     pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
