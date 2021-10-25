@@ -33,6 +33,8 @@ class Neo4j:
             data = self.node_output_to_dataframe(self.session.run(query).data())
         else:
             data=pd.read_csv('Neo4j_workflow_output/'+label)
+
+        # print(data)
         return data
 
     def workflow_step1(self, cond):
@@ -74,8 +76,8 @@ class Neo4j:
                 inspection_conditions = "WHERE Reddit.body CONTAINS '" + cond[3] + "'"
 
         try:
-            strict_query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) " + strict_conditions + " RETURN Reddit,Author LIMIT 20"
-            inspection_query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) " + inspection_conditions + " RETURN Reddit,Author LIMIT 20"
+            strict_query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) " + strict_conditions + " RETURN Reddit,Author,SubReddit LIMIT 20"
+            inspection_query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) " + inspection_conditions + " RETURN Reddit,Author,SubReddit LIMIT 20"
 
             strict_data = self.node_output_to_dataframe(self.session.run(strict_query).data())
             inspection_data = self.node_output_to_dataframe(self.session.run(inspection_query).data())
@@ -86,6 +88,7 @@ class Neo4j:
             # inspection_data=inspection_data.drop(inspection_data[cond].index, inplace=True)
             inspection_data=inspection_data.append(strict_data).drop_duplicates(keep=False)
 
+            # print(inspection_data)
             time.sleep(3)
             return strict_data, inspection_data, True
         except Exception as ex:
@@ -123,7 +126,7 @@ class Neo4j:
         except Exception as ex:
             return None, False
 
-    def find_all_collections(self):# return labels in Neo4j
+    def find_all_collections(self):# return labels in Neo4j and Neo4j_workflow_output/ filefolder
         query="call db.labels()"
         rows=[dict.get('label') for dict in self.session.run(query).data()]
 
@@ -131,6 +134,7 @@ class Neo4j:
         from os.path import isfile, join
         mypath='Neo4j_workflow_output/'
         files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
+
 
         return rows+files
 
