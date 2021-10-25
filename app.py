@@ -393,7 +393,8 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Database', 'Name', 'Schedule', 'Status', 'Score Greater Than', 'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
+    columns = ['ID', 'Database', 'Name', 'Schedule', 'Status', 'Score Greater Than',
+               'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
@@ -446,12 +447,13 @@ def step1(row):
      Output('cur_id', 'data'),
      Output('inspection_data', 'selected_rows')],
     [Input('step1', 'data'),
-     Input('finish_inspection', 'n_clicks')],
-    State('dropdown1', 'value'))
-def update_inspect(json_data, n_clicks, value):
+     Input('finish_inspection', 'n_clicks')])
+def update_inspect(json_data, n_clicks):
     if json_data:
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
+        idx = idx[0]
+        value = workflows[idx].db
         db, df = None, None
         if value == "MySQL":
             db = Mysql('team1', 'reddit_data')
@@ -460,14 +462,14 @@ def update_inspect(json_data, n_clicks, value):
             db = MongoDB('mp_team1', 'comments')
             df = db.all_data()
         else:
-            db = Neo4j('neo4j','Reddit')
+            db = Neo4j('neo4j', 'Reddit')
             df = db.all_data()
         cols = df.columns
         if type(inspect_data[0]) != list:
             inspect_data = pd.DataFrame(data=[], columns=cols)
         else:
             inspect_data = pd.DataFrame(data=inspect_data[0], columns=cols)
-        idx = idx[0]
+
         if workflows[idx].status == 'Storing to local database':
             return ([], [],
                     pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
