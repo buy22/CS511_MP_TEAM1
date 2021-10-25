@@ -27,7 +27,7 @@ class Neo4j:
 
     def all_data(self,label):
         # query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN Reddit.body,n.score,n.controversiality,m.name LIMIT 25"
-        print(label)
+        # print(label)
         if 'workflow' not in label:
             query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) RETURN " + self.label + " LIMIT 25"
             data = self.node_output_to_dataframe(self.session.run(query).data())
