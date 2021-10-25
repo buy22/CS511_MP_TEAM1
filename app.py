@@ -454,6 +454,8 @@ def update_inspect(json_data, n_clicks):
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
         idx = idx[0]
         inspect_data = workflows[idx].inspect_data
+        if type(inspect_data) == list:
+            inspect_data = pd.DataFrame()
         if workflows[idx].status == 'Storing to local database':
             return ([], [],
                     pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
