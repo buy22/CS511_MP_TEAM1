@@ -453,17 +453,6 @@ def update_inspect(json_data, n_clicks):
         data = pd.read_json(json_data, orient='split')
         _, inspect_data, idx = data['strict'], data['inspect'], data['id']
         idx = idx[0]
-        value = workflows[idx].db
-        db, df = None, None
-        if value == "MySQL":
-            db = Mysql('team1', 'reddit_data')
-            df = db.all_data()
-        elif value == "MongoDB":
-            db = MongoDB('mp_team1', 'comments')
-            df = db.all_data()
-        else:
-            db = Neo4j('neo4j', 'Reddit')
-            df = db.all_data()
         inspect_data = workflows[idx].inspect_data
         if workflows[idx].status == 'Storing to local database':
             return ([], [],
