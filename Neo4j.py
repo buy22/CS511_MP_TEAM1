@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 import pandas as pd
 import time
-from py2neo import Graph, Node, Relationship
+#from py2neo import Graph, Node, Relationship
 
 class Neo4j:
     def __init__(self,db,label='Reddit,Author,SubReddit'):
@@ -81,6 +81,7 @@ class Neo4j:
 
             strict_data = self.node_output_to_dataframe(self.session.run(strict_query).data())
             inspection_data = self.node_output_to_dataframe(self.session.run(inspection_query).data())
+            print(inspection_data)
 
             # remove  duplicate in inspection_data
             # cond = inspection_data['Reddit_redditID'].isin(strict_data['Reddit_redditID'])
@@ -106,7 +107,7 @@ class Neo4j:
             query='''MERGE(n:Node {attr0: $attr0_value})'''
             print(nodename,df.columns[0],row[0])
             self.session.run(query, parameters = {'Node': nodename, 'attr0': df.columns[0],'attr0_value':row[0]})
-        return print('success! '+nodename)
+        return print('success! '+ nodename)
 
     def workflow_step3(self, data, attributes, node):
         # df = data[data.columns.intersection(attributes)]
@@ -118,7 +119,7 @@ class Neo4j:
         # return df, True
         try:
             df = data[data.columns.intersection(attributes)]
-            df.to_csv('Neo4j_workflow_output/'+node)
+            df.to_csv('Neo4j_workflow_output/' + node + '.csv')
             # self.dataframe_to_neo(df,node)
             # time.sleep(3)
             return df, True
