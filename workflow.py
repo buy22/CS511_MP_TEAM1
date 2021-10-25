@@ -1,5 +1,6 @@
 from Mysql import Mysql
 from mongoDB import MongoDB
+from Neo4j import Neo4j
 
 
 class Workflow:
@@ -44,7 +45,7 @@ class Workflow:
         elif self.db == 'MongoDB':
             con = MongoDB('mp_team1', 'comments')
         else:
-            return None
+            con = Neo4j('neo4j')
         res = con.workflow_step1(self.conditions)
         if scheduled:
             self.strict_data, _, _ = res
@@ -58,7 +59,7 @@ class Workflow:
         elif self.db == 'MongoDB':
             con = MongoDB('mp_team1', 'comments')
         else:
-            return None
+            con = Neo4j('neo4j')
         if scheduled:
             self.inspect_data = None
         self.all, success = con.workflow_step2(self.strict_data, self.inspect_data)
@@ -70,5 +71,5 @@ class Workflow:
         elif self.db == 'MongoDB':
             con = MongoDB('mp_team1', 'comments')
         else:
-            return None
+            con = Neo4j('neo4j')
         return con.workflow_step3(self.all, self.attributes, 'workflow_'+str(self.id))
