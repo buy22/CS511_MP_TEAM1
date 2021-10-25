@@ -1,7 +1,7 @@
 from neo4j import GraphDatabase
 import pandas as pd
 import time
-#from py2neo import Graph, Node, Relationship
+from py2neo import Graph, Node, Relationship
 
 class Neo4j:
     def __init__(self,db,label='Reddit,Author,SubReddit'):
