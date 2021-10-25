@@ -25,7 +25,7 @@ class Neo4j:
 
 
 
-    def all_data(self,label):
+    def all_data(self,label='Reddit,Author,SubReddit'):
         # query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN Reddit.body,n.score,n.controversiality,m.name LIMIT 25"
         # print(label)
         if 'workflow' not in label:
