@@ -108,7 +108,7 @@ class Neo4j:
     def workflow_step3(self, data, attributes, node):
         # df = data[data.columns.intersection(attributes)]
         # print(attributes)
-        # print(df)
+        # print(data)
         # print(node)
         # self.dataframe_to_neo(df, node)
         # # time.sleep(3)
