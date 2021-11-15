@@ -1,38 +1,40 @@
-from neo4j import GraphDatabase
-import pandas as pd
 import time
-#from py2neo import Graph, Node, Relationship
+
+import pandas as pd
+from neo4j import GraphDatabase
+
+
+
+# from py2neo import Graph, Node, Relationship
 
 class Neo4j:
-    def __init__(self,db,label='Reddit,Author,SubReddit'):
+    def __init__(self, db, label='Reddit,Author,SubReddit'):
         uri = "bolt://localhost:7687"
         user = "neo4j"
         password = "123456"
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.session = self.driver.session(database=db)
-        self.label=label
+        self.label = label
 
     def close(self):
         self.session.close()
 
-    def node_output_to_dataframe(self,neo4j_graph_data):
-        df_list=pd.concat([pd.DataFrame.from_dict({(i, j): data[i][j]
-                                    for i in data.keys()
-                                    for j in data[i].keys()},
-                                   orient='index').transpose() for data in neo4j_graph_data])
+    def node_output_to_dataframe(self, neo4j_graph_data):
+        df_list = pd.concat([pd.DataFrame.from_dict({(i, j): data[i][j]
+                                                     for i in data.keys()
+                                                     for j in data[i].keys()},
+                                                    orient='index').transpose() for data in neo4j_graph_data])
         df_list.columns = ['_'.join(col) for col in df_list.columns.values]
         return df_list
 
-
-
-    def all_data(self,label='Reddit,Author,SubReddit'):
+    def all_data(self, label='Reddit,Author,SubReddit'):
         # query = "MATCH (m:Author)-[:Author]->(n:Reddit) RETURN Reddit.body,n.score,n.controversiality,m.name LIMIT 25"
         # print(label)
         if 'workflow' not in label:
             query = "MATCH (Author:Author)-[:Author]->(Reddit:Reddit)<-[:subreddit]-(SubReddit:SubReddit) RETURN " + self.label + " LIMIT 25"
             data = self.node_output_to_dataframe(self.session.run(query).data())
         else:
-            data=pd.read_csv('Neo4j_workflow_output/'+label)
+            data = pd.read_csv('Neo4j_workflow_output/' + label)
 
         # print(data)
         return data
@@ -86,7 +88,7 @@ class Neo4j:
             # remove  duplicate in inspection_data
             # cond = inspection_data['Reddit_redditID'].isin(strict_data['Reddit_redditID'])
             # inspection_data=inspection_data.drop(inspection_data[cond].index, inplace=True)
-            inspection_data=inspection_data.append(strict_data).drop_duplicates(keep=False)
+            inspection_data = inspection_data.append(strict_data).drop_duplicates(keep=False)
 
             # print(inspection_data)
             time.sleep(3)
@@ -102,12 +104,12 @@ class Neo4j:
         except Exception as ex:
             return None, False
 
-    def dataframe_to_neo(self,df,nodename):
+    def dataframe_to_neo(self, df, nodename):
         for index, row in df.iterrows():
-            query='''MERGE(n:Node {attr0: $attr0_value})'''
-            print(nodename,df.columns[0],row[0])
-            self.session.run(query, parameters = {'Node': nodename, 'attr0': df.columns[0],'attr0_value':row[0]})
-        return print('success! '+ nodename)
+            query = '''MERGE(n:Node {attr0: $attr0_value})'''
+            print(nodename, df.columns[0], row[0])
+            self.session.run(query, parameters={'Node': nodename, 'attr0': df.columns[0], 'attr0_value': row[0]})
+        return print('success! ' + nodename)
 
     def workflow_step3(self, data, attributes, node):
         # df = data[data.columns.intersection(attributes)]
@@ -126,25 +128,28 @@ class Neo4j:
         except Exception as ex:
             return None, False
 
-    def find_all_collections(self):# return labels in Neo4j and Neo4j_workflow_output/ filefolder
-        query="call db.labels()"
-        rows=[dict.get('label') for dict in self.session.run(query).data()]
+    def find_all_collections(self):  # return labels in Neo4j and Neo4j_workflow_output/ filefolder
+        query = "call db.labels()"
+        rows = [dict.get('label') for dict in self.session.run(query).data()]
 
         from os import listdir
         from os.path import isfile, join
-        mypath='Neo4j_workflow_output/'
+        mypath = 'Neo4j_workflow_output/'
         files = [f for f in listdir(mypath) if isfile(join(mypath, f))]
 
+        return rows + files
 
-        return rows+files
+    # don't know the year tag in sample dataset means, if we know, we can plot dataset by year
+    def plot_text_data(self, keyword):
+        # get reddit body data that contains keyword
+        query = "MATCH (Reddit:Reddit) " \
+                "where toLower(Reddit.body) CONTAINS toLower('" + keyword + "') " \
+                                                                            "RETURN Reddit.body"
+        data = pd.DataFrame(self.session.run(query).data())
+        body_df = data['Reddit.body']
+        return body_df
 
-    # def plot_graph(self):
-    #     import plotly.graph_objects as go
-    #     import networkx as nx
-    #
-    #     G = nx.random_geometric_graph(200, 0.125)
-
-# a=Neo4j('neo4j','Reddit')
+##workflow test
 # t=a.workflow_step1([1,0,'',''])
 # t,_=a.workflow_step2(t[0],t[1])
 # a.dataframe_to_neo(t,'name')

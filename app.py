@@ -1,12 +1,16 @@
-from dash import Dash, dcc, html, Input, Output, State, dash_table
-from dash.exceptions import PreventUpdate
-from Mysql import Mysql
-from mongoDB import MongoDB
-from Neo4j import Neo4j
-from workflow import Workflow
-import pandas as pd
 import json
 import time
+
+import pandas as pd
+import plotly.express as px
+from dash import Dash, dcc, html, Input, Output, State, dash_table
+from dash.exceptions import PreventUpdate
+from wordcloud import WordCloud
+
+from Mysql import Mysql
+from Neo4j import Neo4j
+from mongoDB import MongoDB
+from workflow import Workflow
 
 # external CSS stylesheets
 external_stylesheets = [
@@ -19,13 +23,12 @@ external_stylesheets = [
     }
 ]
 
-
 app = Dash(__name__, external_stylesheets=external_stylesheets)
 workflows = []
 
-
 app.layout = html.Div([
     dcc.Store(id='database'),
+    # select database
     html.Div([
         html.H3('Select your database'),
         dcc.Dropdown(
@@ -36,9 +39,10 @@ app.layout = html.Div([
                 {'label': 'Neo4j', 'value': 'Neo4j'},
             ],
             style={'width': '50%'},
-            value='MySQL'
+            value='Neo4j'
         )
     ]),
+    # create workflow
     html.Div([
         html.H3('Create Workflow'),
         html.Div(dcc.Dropdown(
@@ -70,6 +74,7 @@ app.layout = html.Div([
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
+    # workflow table
     html.Div([
         html.H3('Workflows Table'),
         dcc.Store(id='cur_id'),
@@ -103,20 +108,22 @@ app.layout = html.Div([
         ),
         dcc.Interval(
             id='scheduling',
-            interval=60*1000,
+            interval=60 * 1000,
             n_intervals=0
         ),
         dcc.Interval(
             id='update_table',
-            interval=150*1000,
+            interval=150 * 1000,
             n_intervals=0
         )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
-    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
+    html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0,
+                         style={'background-color': 'black', 'color': 'white'}),
              style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
     html.Div(id='schedule_text', style={'display': 'none'}),
+    # Manage, View and Query Data
     html.Div([
         html.H3('Manage, View and Query Data'),
         # data requiring inspection in incoming workflows
@@ -132,17 +139,18 @@ app.layout = html.Div([
             page_size=10,
             data=[],
             css=[{
-                    'selector': '.dash-spreadsheet td div',
-                    'rule': '''
+                'selector': '.dash-spreadsheet td div',
+                'rule': '''
                         line-height: 15px;
                         max-height: 30px; min-height: 30px; height: 30px;
                         display: block;
                         overflow-y: hidden;
                     '''
-                }],
+            }],
         ),
         html.Div(id='inspection_click_data', style={'whiteSpace': 'pre-wrap'}),
-        html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0, style={'background-color': 'black', 'color': 'white'}),
+        html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0,
+                             style={'background-color': 'black', 'color': 'white'}),
                  style={'height': 50, 'display': 'block'}),
         html.Div(id='workflow_result'),
 
@@ -150,11 +158,11 @@ app.layout = html.Div([
         html.Div([
             html.H4('Query for MySQL'),
             html.Div(dcc.Textarea(
-                    id='custom_query',
-                    placeholder='Enter your MySQL query here...',
-                    style={'width': '80%', 'height': 150},
-                ),
-                 style=dict(display='block', justifyContent='center')),
+                id='custom_query',
+                placeholder='Enter your MySQL query here...',
+                style={'width': '80%', 'height': 150},
+            ),
+                style=dict(display='block', justifyContent='center')),
             html.Div(html.Button('Query', id='submit_query', n_clicks=0),
                      style=dict(display='block', justifyContent='center')),
             html.Div(
@@ -182,16 +190,26 @@ app.layout = html.Div([
             page_current=0,
             page_size=10,
             css=[{
-                    'selector': '.dash-spreadsheet td div',
-                    'rule': '''
+                'selector': '.dash-spreadsheet td div',
+                'rule': '''
                         line-height: 15px;
                         max-height: 30px; min-height: 30px; height: 30px;
                         display: block;
                         overflow-y: hidden;
                     '''
-                }],
+            }],
         ),
         html.Div(id='click_data', style={'whiteSpace': 'pre-wrap', 'height': 200}),
+    ]),
+    # Text data visualization
+    html.Div([
+        html.H3('Text data visualization'),
+        dcc.Input(
+            id='text_visualize_key_word',
+            placeholder='Input your keywords here, default: Disease',
+            value='Disease'
+        ),
+        dcc.Graph(id='text-graph-with-input'),  # might try slider rather than input next week
     ])
 ])
 
@@ -254,7 +272,7 @@ def schedule_workflows(n_intervals):
             continue
         if i.status != "Idle":
             can_start = False
-        i.wait_time = max(i.wait_time-1, 0)
+        i.wait_time = max(i.wait_time - 1, 0)
         if i.wait_time == 0:
             execution_list.append(idx)
 
@@ -293,7 +311,7 @@ def automation(i):
      Input('workflow_result', 'children')])
 def update_table_list(value, n_intervals, children):
     if value == "MySQL":
-        db = Mysql('team1', 'reddit_data') # again, table name unimportant for "show tables" query
+        db = Mysql('team1', 'reddit_data')  # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
         # show tables query returns list of tuples for some reason
         options = [{'label': opt[0], 'value': opt[0]} for opt in opts]
@@ -303,7 +321,7 @@ def update_table_list(value, n_intervals, children):
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
         return options, options[0]['value']
-    else: # Neo4j - no tables, return nanme of lables instead
+    else:  # Neo4j - no tables, return nanme of lables instead
         db = Neo4j('neo4j')
         opts = db.find_all_collections()
         options = [{'label': opt, 'value': opt} for opt in opts]
@@ -327,7 +345,7 @@ def update_figure_table(value1, value2, children):
         df = db.all_data()
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
     else:
-        db = Neo4j('neo4j',value2)
+        db = Neo4j('neo4j', value2)
         df = db.all_data(value2)
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
 
@@ -438,7 +456,7 @@ def step1(row):
         w.status = "Data query failed"
     time.sleep(2)
     return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
-                date_format='iso', orient='split')
+        date_format='iso', orient='split')
 
 
 @app.callback(
@@ -500,7 +518,9 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
             if success_step3:
                 return 'Workflow {} completed'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
             else:
-                return 'Workflow {} returned empty result. No write to database'.format(str(idx)), {'row': row, 'column': 0, 'column_id': 'ID'}, button
+                return 'Workflow {} returned empty result. No write to database'.format(str(idx)), {'row': row,
+                                                                                                    'column': 0,
+                                                                                                    'column_id': 'ID'}, button
         else:
             raise Exception
 
@@ -518,6 +538,28 @@ def display_workflow_click_data(active_cell, table_data):
         return out
     else:
         return 'no workflow selected'
+
+
+# Text data visualization
+@app.callback(
+    Output('text-graph-with-input', 'figure'),
+    [Input('dropdown1', 'value'), Input('text_visualize_key_word', 'value')]
+)
+def update_figure(selected_database,
+                  keyword):  # don't know the year tag in sample dataset means, if we know, we can plot dataset by year. selected_year=2015
+    if selected_database == "MySQL":
+        db = Mysql('team1', 'reddit_data')
+    elif selected_database == "MongoDB":
+        db = MongoDB('mp_team1', 'comments')
+    else:
+        db = Neo4j('neo4j')
+    body_df = db.plot_text_data(keyword)
+    # generate word cloud
+    wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
+        ' '.join(body_df))
+    # save to file foder
+    wordcloud.to_file('Word_Clouds/word_cloud.png')
+    return px.imshow(wordcloud.to_array())
 
 
 if __name__ == '__main__':
