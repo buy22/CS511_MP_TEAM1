@@ -214,7 +214,7 @@ app.layout = html.Div([
         html.Div([dcc.Graph(id='word-cloud-figure')]),
         html.Div([dcc.Graph(id='word-count-figure')]),
         html.Div([dcc.Graph(id='word-relation-figure')]),
-    ])
+    ], id='visualizations')
 ])
 
 
@@ -335,7 +335,8 @@ def update_table_list(value, n_intervals, children):
 @app.callback(
     [Output('live_update_table', 'data'),
      Output('live_update_table', 'columns'),
-     Output('sql_query', 'style')],
+     Output('sql_query', 'style'),
+     Output('visualizations', 'style')],
     [Input('dropdown1', 'value'),
      Input('dropdown2', 'value'),
      Input('workflow_result', 'children')])
@@ -343,15 +344,18 @@ def update_figure_table(value1, value2, children):
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}, \
+               {'display': 'none'}
     elif value1 == "MongoDB":
         db = MongoDB('mp_team1', value2)
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}, \
+               {'display': 'none'}
     else:
         db = Neo4j('neo4j', value2)
         df = db.all_data(value2)
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}, \
+               {'display': 'block'}
 
 
 @app.callback(
@@ -508,7 +512,6 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
         idx = pd.read_json(cur_id, orient='split')['id'][0]
         if workflows[idx].status != 'Data query success':
             return 'No inspection in progress', {'row': 0, 'column': 0, 'column_id': 'ID'}, 0
-        print(workflows[idx].status)
         workflows[idx].retrieve_inspect_data(res)
         workflows[idx].status = 'Storing to local database'
         success = workflows[idx].workflow_step2()
@@ -552,27 +555,27 @@ def display_workflow_click_data(active_cell, table_data):
 def update_figure(selected_database,
                   keyword):  # don't know the year tag in sample dataset means, if we know, we can plot dataset by year. selected_year=2015
     if selected_database == "MySQL":
-        db = Mysql('team1', 'reddit_data')
+        raise PreventUpdate
     elif selected_database == "MongoDB":
-        db = MongoDB('mp_team1', 'comments')
+        raise PreventUpdate
     else:
         db = Neo4j('neo4j')
-    body_df = db.get_keyword_reddit(keyword)
+        body_df = db.get_keyword_reddit(keyword)
 
-    # generate word cloud
-    wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
-        ' '.join(body_df))
-    fig_wordcloud = px.imshow(wordcloud.to_array())
+        # generate word cloud
+        wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
+            ' '.join(body_df))
+        fig_wordcloud = px.imshow(wordcloud.to_array())
 
-    # generate word count
-    stopwords = list(map(str.strip, open('stopwords').readlines()))
-    npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
-    fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
+        # generate word count
+        stopwords = list(map(str.strip, open('stopwords').readlines()))
+        npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
+        fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
 
-    #generate word relation
-    npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
-    fig_relation=npt.co_network(title='Co-occurrence network')
-    return fig_wordcloud, fig_wordcount, fig_relation
+        #generate word relation
+        npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
+        fig_relation=npt.co_network(title='Co-occurrence network')
+        return fig_wordcloud, fig_wordcount, fig_relation
 
 
 if __name__ == '__main__':

@@ -6,7 +6,7 @@ from neo4j import GraphDatabase
 # Aura queries use an encrypted connection using the "neo4j+s" URI scheme
 uri = "bolt://localhost:7687"
 user = "neo4j"
-password = "123456"
+password = "q1w2990310"
 driver = GraphDatabase.driver(uri, auth=(user, password))
 session=driver.session(database='neo4j')
 #connnection testing
