@@ -11,7 +11,7 @@ class Neo4j:
     def __init__(self, db, label='Reddit,Author,SubReddit'):
         uri = "bolt://localhost:7687"
         user = "neo4j"
-        password = "q1w2990310"
+        password = "123456"
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
         self.session = self.driver.session(database=db)
         self.label = label
