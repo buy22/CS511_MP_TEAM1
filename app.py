@@ -1,6 +1,7 @@
 import json
 import time
 
+from Visualization import NLPlot
 import pandas as pd
 import plotly.express as px
 from dash import Dash, dcc, html, Input, Output, State, dash_table
@@ -209,7 +210,10 @@ app.layout = html.Div([
             placeholder='Input your keywords here, default: Disease',
             value='Disease'
         ),
-        dcc.Graph(id='text-graph-with-input'),  # might try slider rather than input next week
+        # might try slider with time rather than input next week
+        html.Div([dcc.Graph(id='word-cloud-figure')]),
+        html.Div([dcc.Graph(id='word-count-figure')]),
+        html.Div([dcc.Graph(id='word-relation-figure')]),
     ])
 ])
 
@@ -542,7 +546,7 @@ def display_workflow_click_data(active_cell, table_data):
 
 # Text data visualization
 @app.callback(
-    Output('text-graph-with-input', 'figure'),
+    [Output('word-cloud-figure', 'figure'), Output('word-count-figure', 'figure'), Output('word-relation-figure', 'figure')],
     [Input('dropdown1', 'value'), Input('text_visualize_key_word', 'value')]
 )
 def update_figure(selected_database,
@@ -553,13 +557,22 @@ def update_figure(selected_database,
         db = MongoDB('mp_team1', 'comments')
     else:
         db = Neo4j('neo4j')
-    body_df = db.plot_text_data(keyword)
+    body_df = db.get_keyword_reddit(keyword)
+
     # generate word cloud
     wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
         ' '.join(body_df))
-    # save to file foder
-    wordcloud.to_file('Word_Clouds/word_cloud.png')
-    return px.imshow(wordcloud.to_array())
+    fig_wordcloud = px.imshow(wordcloud.to_array())
+
+    # generate word count
+    stopwords = list(map(str.strip, open('stopwords').readlines()))
+    npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
+    fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
+
+    #generate word relation
+    npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
+    fig_relation=npt.co_network(title='Co-occurrence network')
+    return fig_wordcloud, fig_wordcount, fig_relation
 
 
 if __name__ == '__main__':

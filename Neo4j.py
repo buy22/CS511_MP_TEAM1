@@ -140,16 +140,42 @@ class Neo4j:
         return rows + files
 
     # don't know the year tag in sample dataset means, if we know, we can plot dataset by year
-    def plot_text_data(self, keyword):
+    def get_keyword_reddit(self, keyword):
         # get reddit body data that contains keyword
         query = "MATCH (Reddit:Reddit) " \
                 "where toLower(Reddit.body) CONTAINS toLower('" + keyword + "') " \
                                                                             "RETURN Reddit.body"
         data = pd.DataFrame(self.session.run(query).data())
-        body_df = data['Reddit.body']
+        # convert sting to lower case
+        body_df = data['Reddit.body'].str.lower()
         return body_df
 
-##workflow test
-# t=a.workflow_step1([1,0,'',''])
-# t,_=a.workflow_step2(t[0],t[1])
-# a.dataframe_to_neo(t,'name')
+
+# db=Neo4j('neo4j')
+# body_df=db.get_keyword_reddit('disease')
+#
+# from wordcloud import WordCloud
+# import plotly.express as px
+# import nlplot
+# import plotly.io as pio
+# pio.renderers.default = "browser"
+# # target_col as a list type or a string separated by a space.
+# npt = nlplot.NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
+#
+# # Stopword calculations can be performed.
+# stopwords = list(map(str.strip, open('stopwords').readlines()))
+#
+# fig=npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
+# fig.show()
+#
+# npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
+# fig=npt.co_network(title='Co-occurrence network')
+# fig.show()
+#
+# wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
+#         ' '.join(body_df))
+# # save to file foder
+# wordcloud.to_file('Word_Clouds/word_cloud.png')
+# fig=px.imshow(wordcloud.to_array())
+# fig.show()
+
