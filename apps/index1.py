@@ -16,10 +16,8 @@ from app import app
 from apps import create_subcomponents
 
 workflows = []
-subcomponents = []
 
 layout = html.Div([
-    dcc.Store(id='database'),
     # select database
     html.Div([
         html.H3('Select your database'),
