@@ -311,9 +311,9 @@ def automation(i):
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
     [Input('dropdown1', 'value'),
-     # Input('update_table', 'n_intervals'),
+     Input('schedule_text', 'children'),
      Input('workflow_result', 'children')])
-def update_table_list(value, children):
+def update_table_list(value, children1, children2):
     if value == "MySQL":
         db = Mysql('team1', 'reddit_data')  # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
@@ -338,9 +338,8 @@ def update_table_list(value, children):
      Output('sql_query', 'style'),
      Output('visualizations', 'style')],
     [Input('dropdown1', 'value'),
-     Input('dropdown2', 'value'),
-     Input('workflow_result', 'children')])
-def update_figure_table(value1, value2, children):
+     Input('dropdown2', 'value')])
+def update_figure_table(value1, value2):
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
