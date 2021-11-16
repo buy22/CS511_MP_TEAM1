@@ -311,9 +311,9 @@ def automation(i):
     [Output('dropdown2', 'options'),
      Output('dropdown2', 'value')],
     [Input('dropdown1', 'value'),
-     Input('update_table', 'n_intervals'),
+     # Input('update_table', 'n_intervals'),
      Input('workflow_result', 'children')])
-def update_table_list(value, n_intervals, children):
+def update_table_list(value, children):
     if value == "MySQL":
         db = Mysql('team1', 'reddit_data')  # again, table name unimportant for "show tables" query
         opts = db.find_all_collections()
@@ -397,9 +397,6 @@ def display_insepect_click_data(active_cell, table_data):
 )
 def execute_query(n_clicks, query):
     if n_clicks == 0:
-        # execute_query fires immediately
-        # and displays an error since there is no query to return...
-        # this will prevent that from occurring until a query is sent.
         raise PreventUpdate
     else:
         db = Mysql('team1', 'reddit_data')
