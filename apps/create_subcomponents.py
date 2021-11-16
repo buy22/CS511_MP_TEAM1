@@ -53,10 +53,6 @@ layout = html.Div([
     # subcomponent table
     html.Div([
         html.H3('Subcomponents Table'),
-        dcc.Store(id='cur_id'),
-        dcc.Store(id='step0'),
-        dcc.Store(id='step1'),
-        dcc.Store(id='step2'),
         dash_table.DataTable(
             id='subcomponent_table',
             columns=[

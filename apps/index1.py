@@ -18,44 +18,16 @@ from apps import create_subcomponents
 workflows = []
 
 layout = html.Div([
-    # select database
-    html.Div([
-        html.H3('Select your database'),
-        dcc.Dropdown(
-            id='dropdown1',
-            options=[
-                {'label': 'MySQL', 'value': 'MySQL'},
-                {'label': 'MongoDB', 'value': 'MongoDB'},
-                {'label': 'Neo4j', 'value': 'Neo4j'},
-            ],
-            style={'width': '50%'},
-            value='Neo4j'
-        )
-    ]),
     # create workflow
     html.Div([
         html.H3('Create Workflow'),
-        html.Div(dcc.Dropdown(
-            id='attributes_keep',
-            options=[],
-            value=[], placeholder='select attributes to keep',
-            multi=True
-        ), style={'height': 50}),
         html.Div(dcc.Input(id='workflow_name', placeholder="name of the workflow"),
                  style={'height': 30, 'margin-right': 10}),
         html.Br(),
-        html.Div(dcc.Input(id='condition1', type='number', placeholder="score greater than?"),
-                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition2', type='number', placeholder="controversiality (0 or 1)"),
-                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        html.Div(dcc.Input(id='condition3', placeholder="which author?"),
-                 style={'display': 'flex', 'float': 'left', 'height': 50, 'margin-right': 10}),
-        # currently MySQL will assume that only one word is inputted (ex. if multiple words are given),
-        # they will not be treated separately in the query. something that I can probably fix after the MP
-        html.Div(dcc.Input(id='condition4', placeholder="what keyword to search?"),
-                 style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
+        html.Div(dcc.Input(id='workflow_subcomponents', placeholder="subcomponent separated by ','", style={'width': '50%'}),
+                 style={'display': 'flex', 'float': 'left', 'height': 30, 'width': '40%', 'margin-right': 10}),
         html.Div(dcc.Input(id='workflow_schedule', type='number', placeholder="execute how often? (mins)"),
-                 style={'display': 'flex', 'float': 'left', 'height': 30, 'margin-right': 10}),
+                 style={'display': 'flex', 'float': 'right', 'height': 30, 'margin-right': 10}),
         html.Div(dcc.Input(id='workflow_dependency', type='number', placeholder="execute after which workflow?(id)"),
                  style={'display': 'flex', 'float': 'right', 'height': 30, 'margin-right': 10}),
         html.Div(html.Button('Create Workflow', id='create_workflow', n_clicks=0,
@@ -89,6 +61,7 @@ layout = html.Div([
     html.Div([
         html.H3('Workflows Table'),
         dcc.Store(id='cur_id'),
+        dcc.Store(id='cur_subid'),
         dcc.Store(id='step0'),
         dcc.Store(id='step1'),
         dcc.Store(id='step2'),
@@ -96,14 +69,11 @@ layout = html.Div([
             id='workflow_table',
             columns=[
                 {'name': 'ID', 'id': 'workflow_table_id'},
-                {'name': 'Database', 'id': 'workflow_table_db'},
                 {'name': 'Name', 'id': 'workflow_table_name'},
                 {'name': 'Schedule', 'id': 'workflow_table_schedule'},
+                {'name': 'Subcomponents', 'id': 'workflow_table_subcomponents'},
                 {'name': 'Status', 'id': 'workflow_table_status'},
-                {'name': 'Score Greater Than', 'id': 'workflow_table_score'},
-                {'name': 'Controversiality Less Than', 'id': 'workflow_table_controversiality'},
-                {'name': 'Author', 'id': 'workflow_table_author'},
-                {'name': 'Search Words', 'id': 'workflow_table_search'},
+                {'name': 'Next workflow', 'id': 'workflow_table_next'},
             ],
             data=[],
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -135,6 +105,7 @@ layout = html.Div([
              style={'height': 50, 'display': 'block'}),
     html.Div(id='workflow_started', style={'display': 'none'}),
     html.Div(id='schedule_text', style={'display': 'none'}),
+
     # Manage, View and Query Data
     html.Div([
         html.H3('Manage, View and Query Data'),
@@ -161,10 +132,29 @@ layout = html.Div([
             }],
         ),
         html.Div(id='inspection_click_data', style={'whiteSpace': 'pre-wrap'}),
-        html.Div(html.Button('Store selected data', id='finish_inspection', n_clicks=0,
+        html.Div(html.Button('Store Selected Data', id='store_selected', n_clicks=0,
                              style={'background-color': 'black', 'color': 'white'}),
                  style={'height': 50, 'display': 'block'}),
+        html.Div(html.Button('Finish Inspection', id='finish_inspection', n_clicks=0,
+                             style={'background-color': 'black', 'color': 'white'}),
+                 style={'height': 50, 'display': 'block'}),
+        html.Div(id='store_tmp'),
         html.Div(id='workflow_result'),
+
+        # select database
+        html.Div([
+            html.H3('Select your database'),
+            dcc.Dropdown(
+                id='dropdown1',
+                options=[
+                    {'label': 'MySQL', 'value': 'MySQL'},
+                    {'label': 'MongoDB', 'value': 'MongoDB'},
+                    {'label': 'Neo4j', 'value': 'Neo4j'},
+                ],
+                style={'width': '50%'},
+                value='Neo4j'
+            )
+        ]),
 
         # Mysql query section
         html.Div([
@@ -248,31 +238,30 @@ def get_columns(value):
 @app.callback(
     Output('create_workflow_result', 'children'),
     Input('create_workflow', 'n_clicks'),
-    [State('condition1', 'value'),
-     State('condition2', 'value'),
-     State('condition3', 'value'),
-     State('condition4', 'value'),
-     State('workflow_name', 'value'),
-     State('attributes_keep', 'value'),
+    [State('workflow_name', 'value'),
      State('workflow_schedule', 'value'),
-     State('workflow_dependency', 'value'),
-     State('dropdown1', 'value')]
+     State('workflow_subcomponents', 'value'),
+     State('workflow_dependency', 'value')]
 )
-def create_workflow(n_clicks, condition1, condition2, condition3, condition4,
-                    workflow_name, attributes, schedule, dependency, db):
+def create_workflow(n_clicks, workflow_name, schedule, subcomponents, dependency):
     if n_clicks:
         if schedule is not None and schedule < 0:
             return "Please input a time (in minutes) greater than 0"
-        if condition2 is not None and (int(condition2) < 0 or int(condition2) > 1):
-            return "Invalid controversiality"
         if dependency is not None:
             for w in workflows:
                 if w.id == int(dependency):
                     w.dependency = len(workflows)
                     break
-        wf = Workflow(db, len(workflows), workflow_name, schedule, "Idle",
-                      [condition1, condition2, condition3, condition4], attributes)
-        workflows.append(wf)
+        if subcomponents is None:
+            raise PreventUpdate
+        else:
+            ss = subcomponents.strip().split(',')
+            s = [int(i) for i in ss]
+            for i in s:
+                if i < 0 or i >= len(create_subcomponents.subcomponents):
+                    return "invalid subcomponent ID"
+            wf = Workflow(len(workflows), workflow_name, s, schedule, "Idle")
+            workflows.append(wf)
         return ""
 
 
@@ -309,7 +298,7 @@ def automation(i):
     if not success:
         raise PreventUpdate
     w.status = "Storing to local database"
-    _, success = w.workflow_step3()
+    success = w.workflow_step3()
     if not success:
         raise PreventUpdate
     w.status = "Workflow completed"
@@ -429,8 +418,7 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Database', 'Name', 'Schedule', 'Status', 'Score Greater Than',
-               'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
+    columns = ['ID', 'Name', 'Schedule', 'Subcomponents', 'Status', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     columns_subcomponent = ['ID', 'Database', 'Name', 'Score Greater Than',
                             'Controversiality Less Than', 'Author', 'Search Words']
@@ -467,42 +455,69 @@ def step1(row):
             break
     if not w:
         return
-    strict_data, inspect_data, success = w.workflow_step1()
+    success = w.workflow_step1()
     if success:
         w.status = "Data query success"
     else:
         w.status = "Data query failed"
     time.sleep(2)
-    return pd.DataFrame.from_records([{'strict': strict_data, 'inspect': inspect_data, 'id': row}]).to_json(
-        date_format='iso', orient='split')
+    return row
 
 
 @app.callback(
     [Output('inspection_data', 'data'),
      Output('inspection_data', 'columns'),
      Output('cur_id', 'data'),
+     Output('cur_subid', 'data'),
      Output('inspection_data', 'selected_rows')],
     [Input('step1', 'data'),
-     Input('finish_inspection', 'n_clicks')])
-def update_inspect(json_data, n_clicks):
-    if json_data:
-        data = pd.read_json(json_data, orient='split')
-        _, inspect_data, idx = data['strict'], data['inspect'], data['id']
-        idx = idx[0]
+     Input('finish_inspection', 'n_clicks'),
+     Input('store_tmp', 'children')])
+def update_inspect(idx, n_clicks1, children):
+    if idx is not None:
         if workflows[idx].status == 'Data query success':
             workflows[idx].status = "Inspection awaits"
-        inspect_data = workflows[idx].inspect_data
-        if type(inspect_data) == list:
-            inspect_data = pd.DataFrame()
+        elif workflows[idx].status == 'Data query failed':
+            raise PreventUpdate
+
+        inspect_data = pd.DataFrame()
+        cur_subid = -1
+        for i in workflows[idx].subcomponents:
+            s = create_subcomponents.subcomponents[i]
+            if s.inspect_data is not None:
+                inspect_data = s.inspect_data
+                cur_subid = i
+                break
         if workflows[idx].status == 'Storing to local database':
-            return ([], [],
-                    pd.DataFrame.from_records([{'id': -1}]).to_json(date_format='iso', orient='split'), [])
+            return [], [], -1, -1, []
         else:
             return (inspect_data.to_dict('records'),
                     [{'name': i, 'id': i, "selectable": True} for i in inspect_data.columns],
-                    pd.DataFrame.from_records([{'id': idx}]).to_json(date_format='iso', orient='split'), [])
+                    idx, cur_subid, [])
     else:
         raise PreventUpdate
+
+
+@app.callback(
+    Output('store_tmp', 'children'),
+    Input('store_selected', 'n_clicks'),
+    [State('cur_subid', 'data'),
+     State('cur_id', 'data'),
+     State('inspection_data', 'selected_rows'),
+     State('inspection_data', 'data')])
+def store_selected(n_clicks, subid, idx, selected_rows, data):
+    if n_clicks == 0:
+        raise PreventUpdate
+    if subid is not None and subid >= 0:
+        if idx is not None and idx >= 0:
+            create_subcomponents.subcomponents[subid].inspect_data = None
+            res = []
+            if data:
+                for i in selected_rows:
+                    res.append(data[i])
+            create_subcomponents.subcomponents[subid].strict_data = \
+                create_subcomponents.subcomponents[subid].strict_data.append(res)
+            return 'Data of subcomponent with id {} in workflow {} has been pushed'.format(str(subid), str(idx))
 
 
 @app.callback(
@@ -510,26 +525,19 @@ def update_inspect(json_data, n_clicks):
      Output('workflow_table', 'active_cell'),
      Output('start_workflow', 'n_clicks')],
     Input('finish_inspection', 'n_clicks'),
-    [State('inspection_data', 'selected_rows'),
-     State('inspection_data', 'data'),
-     State('cur_id', 'data')])
-def finish_inspection(n_clicks, selected_rows, data, cur_id):
+    [State('cur_id', 'data')])
+def finish_inspection(n_clicks, cur_id):
     if n_clicks == 0:
         raise PreventUpdate
-    res = []
-    if data:
-        for i in selected_rows:
-            res.append(data[i])
-    if cur_id:
-        idx = pd.read_json(cur_id, orient='split')['id'][0]
+    if cur_id is not None and cur_id >= 0:
+        idx = cur_id
         if workflows[idx].status != 'Inspection awaits':
             return 'No inspection in progress', {'row': 0, 'column': 0, 'column_id': 'ID'}, 0
-        workflows[idx].retrieve_inspect_data(res)
         workflows[idx].status = 'Storing to local database'
         success = workflows[idx].workflow_step2()
         if success:
             workflows[idx].status = 'Workflow completed'
-            _, success_step3 = workflows[idx].workflow_step3()
+            success_step3 = workflows[idx].workflow_step3()
             row, button = 0, 0
             if workflows[idx].dependency:
                 row = workflows[idx].dependency
@@ -540,8 +548,7 @@ def finish_inspection(n_clicks, selected_rows, data, cur_id):
                 return 'Workflow {} returned empty result. No write to database'.format(str(idx)), {'row': row,
                                                                                                     'column': 0,
                                                                                                     'column_id': 'ID'}, button
-        else:
-            raise Exception
+    raise PreventUpdate
 
 
 @app.callback(

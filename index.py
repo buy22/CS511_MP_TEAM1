@@ -10,7 +10,7 @@ app.layout = html.Div([
         dcc.Link('| Create Subcomponents |', href='/apps/create_subcomponents'),
     ]),
     html.Div(id='page-content', children=[]),
-    ])
+])
 
 
 @app.callback(Output('page-content', 'children'),

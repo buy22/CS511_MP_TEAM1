@@ -26,6 +26,7 @@ class Subcomponent:
         self.inspect_data = inspected
 
     def subcomponent_step1(self, scheduled=False):
+        self.strict_data, self.inspect_data, self.all = None, None, None
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
@@ -51,11 +52,11 @@ class Subcomponent:
         self.all, success = con.workflow_step2(self.strict_data, self.inspect_data)
         return success
 
-    def subcomponent_step3(self):
+    def subcomponent_step3(self, idx):
         if self.db == 'MySQL':
             con = Mysql('team1', 'reddit_data')
         elif self.db == 'MongoDB':
             con = MongoDB('mp_team1', 'comments')
         else:
             con = Neo4j('neo4j')
-        return con.workflow_step3(self.all, self.attributes, 'workflow_'+str(self.id))
+        return con.workflow_step3(self.all, self.attributes, 'workflow_'+str(idx)+'_'+str(self.id))

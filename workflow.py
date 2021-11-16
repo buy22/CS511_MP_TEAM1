@@ -1,75 +1,45 @@
+import pandas as pd
 from Mysql import Mysql
 from mongoDB import MongoDB
 from Neo4j import Neo4j
+from apps import create_subcomponents
 
 
 class Workflow:
-    def __init__(self, db, id, name, schedule=None, status="Idle", conditions=[], attributes=[],
-                 dependency=None, strict_data=None):
+    def __init__(self, id, name, subcomponents=[], schedule=None, status="Idle", dependency=None):
         self.id = id
         self.name = name
+        self.subcomponents = subcomponents
         if schedule:
             assert int(schedule) > 0
             self.schedule = int(schedule)
         else:
             self.schedule = None
         self.status = status
-        self.conditions = conditions
-        for i, j in enumerate(conditions):
-            if j:
-                if i == 0 or i == 1:
-                    assert int(j) > 0
-                    self.conditions[i] = int(j)
         self.dependency = dependency
-        self.attributes = attributes
-        self.strict_data = strict_data
-        self.inspect_data = None
-        self.all = None
-        self.db = db
         self.wait_time = schedule
-
-    def __str__(self):
-        return 'Workflow - id: {}, name: {}, schedule: {}, condition: {}, attributes: {}, dependency: {}'.format(
-            str(self.id), self.name, self.schedule, self.conditions, self.attributes, self.dependency)
     
     def to_list(self):
-        return [self.id, self.db, self.name, self.schedule, self.status, self.conditions[0], self.conditions[1],
-                self.conditions[2], self.conditions[3], str(self.dependency)]
-
-    def retrieve_inspect_data(self, inspected):
-        self.inspect_data = inspected
+        return [self.id, self.name, self.schedule, ','.join([str(i) for i in self.subcomponents]), self.status, str(self.dependency)]
 
     def workflow_step1(self, scheduled=False):
-        if self.db == 'MySQL':
-            con = Mysql('team1', 'reddit_data')
-        elif self.db == 'MongoDB':
-            con = MongoDB('mp_team1', 'comments')
-        else:
-            con = Neo4j('neo4j')
-        res = con.workflow_step1(self.conditions)
-        if scheduled:
-            self.strict_data, _, _ = res
-        else:
-            self.strict_data, self.inspect_data, _ = res
-        return res
+        s = True
+        for i in self.subcomponents:
+            s = create_subcomponents.subcomponents[i]
+            _, _, success = s.subcomponent_step1(scheduled)
+            s = s and success
+        return s
 
     def workflow_step2(self, scheduled=False):
-        if self.db == 'MySQL':
-            con = Mysql('team1', 'reddit_data')
-        elif self.db == 'MongoDB':
-            con = MongoDB('mp_team1', 'comments')
-        else:
-            con = Neo4j('neo4j')
-        if scheduled:
-            self.inspect_data = None
-        self.all, success = con.workflow_step2(self.strict_data, self.inspect_data)
-        return success
+        s = True
+        for i in self.subcomponents:
+            s = create_subcomponents.subcomponents[i]
+            success = s.subcomponent_step2(scheduled)
+            s = s and success
+        return s
 
     def workflow_step3(self):
-        if self.db == 'MySQL':
-            con = Mysql('team1', 'reddit_data')
-        elif self.db == 'MongoDB':
-            con = MongoDB('mp_team1', 'comments')
-        else:
-            con = Neo4j('neo4j')
-        return con.workflow_step3(self.all, self.attributes, 'workflow_'+str(self.id))
+        for i in self.subcomponents:
+            s = create_subcomponents.subcomponents[i]
+            _, success = s.subcomponent_step3(self.id)
+        return True

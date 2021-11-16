@@ -83,7 +83,6 @@ class Neo4j:
 
             strict_data = self.node_output_to_dataframe(self.session.run(strict_query).data())
             inspection_data = self.node_output_to_dataframe(self.session.run(inspection_query).data())
-            print(inspection_data)
 
             # remove  duplicate in inspection_data
             # cond = inspection_data['Reddit_redditID'].isin(strict_data['Reddit_redditID'])
@@ -107,9 +106,9 @@ class Neo4j:
     def dataframe_to_neo(self, df, nodename):
         for index, row in df.iterrows():
             query = '''MERGE(n:Node {attr0: $attr0_value})'''
-            print(nodename, df.columns[0], row[0])
+            # print(nodename, df.columns[0], row[0])
             self.session.run(query, parameters={'Node': nodename, 'attr0': df.columns[0], 'attr0_value': row[0]})
-        return print('success! ' + nodename)
+        return 'success! ' + nodename
 
     def workflow_step3(self, data, attributes, node):
         # df = data[data.columns.intersection(attributes)]
