@@ -1,6 +1,5 @@
 class Subcomponent:
-    def __init__(self, db, id, name, schedule=None, status="Idle", conditions=[], attributes=[],
-                 dependency=None, strict_data=None):
+    def __init__(self, db, id, name, conditions=[], attributes=[]):
         self.id = id
         self.name = name
         self.conditions = conditions

@@ -1,7 +1,13 @@
+from Mysql import Mysql
+from Neo4j import Neo4j
+from mongoDB import MongoDB
 from dash import Dash, dcc, html, Input, Output, State, dash_table
 from app import app, server
+import pandas as pd
 
-subcomponents = [1,2,3,4]
+from subcomponent import Subcomponent
+
+subcomponents = []
 
 layout = html.Div([
     # select database
@@ -20,9 +26,9 @@ layout = html.Div([
     ]),
     # create subcomponents
     html.Div([
-        html.H3('Create Subcomponents for workflows'),
+        html.H3('Create Subcomponents for subcomponents'),
         html.Div(dcc.Dropdown(
-            id='attributes_keep',
+            id='attributes_subcomponent',
             options=[],
             value=[], placeholder='select attributes to keep',
             multi=True
@@ -41,7 +47,7 @@ layout = html.Div([
         html.Div(html.Button('Create Subcomponent', id='create_subcomponent', n_clicks=0,
                              style={'background-color': 'black', 'color': 'white'}),
                  style={'margin-top': 50, 'height': 50}),
-        html.Div(id='create_component_result',
+        html.Div(id='create_subcomponent_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
     # subcomponent table
@@ -70,3 +76,55 @@ layout = html.Div([
         ),
     ])
 ])
+
+
+@app.callback(
+    Output('attributes_subcomponent', 'options'),
+    Input('dropdown_subcomponent', 'value'))
+def get_columns(value):
+    db, df = None, None
+    if value == "MySQL":
+        db = Mysql('team1', 'reddit_data')
+    elif value == "MongoDB":
+        db = MongoDB('mp_team1', 'comments')
+    else:
+        db = Neo4j('neo4j')
+    df = db.all_data()
+    cols = df.columns
+    return [{'label': opt, 'value': opt} for opt in cols]
+
+
+@app.callback(
+    Output('create_subcomponent_result', 'children'),
+    Input('create_subcomponent', 'n_clicks'),
+    [State('condition1', 'value'),
+     State('condition2', 'value'),
+     State('condition3', 'value'),
+     State('condition4', 'value'),
+     State('subcomponent_name', 'value'),
+     State('attributes_subcomponent', 'value'),
+     State('dropdown_subcomponent', 'value')]
+)
+def create_subcomponent(n_clicks, condition1, condition2, condition3, condition4,
+                        subcomponent_name, attributes, db):
+    if n_clicks:
+        if condition2 is not None and (int(condition2) < 0 or int(condition2) > 1):
+            return "Invalid controversiality"
+        s = Subcomponent(db, len(subcomponents), subcomponent_name,
+                         [condition1, condition2, condition3, condition4], attributes)
+        subcomponents.append(s)
+        return ""
+
+
+@app.callback(
+    [Output('subcomponent_table', 'data'),
+     Output('subcomponent_table', 'columns')],
+    [Input('create_subcomponent', 'n_clicks')])
+def update_subcomponent_table(n_clicks):
+    to_add = []
+    for subcomponent in subcomponents:
+        to_add.append(subcomponent.to_list())
+    columns = ['ID', 'Database', 'Name', 'Score Greater Than',
+               'Controversiality Less Than', 'Author', 'Search Words']
+    df = pd.DataFrame(to_add, columns=columns)
+    return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
