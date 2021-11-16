@@ -4,6 +4,7 @@ from mongoDB import MongoDB
 from dash import Dash, dcc, html, Input, Output, State, dash_table
 from app import app, server
 import pandas as pd
+import json
 
 from subcomponent import Subcomponent
 
@@ -70,6 +71,7 @@ layout = html.Div([
             page_current=0,
             page_size=10,
         ),
+        html.Div(id='subcomponent_click_data', style={'whiteSpace': 'pre-wrap'}),
     ])
 ])
 
@@ -120,7 +122,23 @@ def update_subcomponent_table(n_clicks):
     to_add = []
     for subcomponent in subcomponents:
         to_add.append(subcomponent.to_list())
-    columns = ['ID', 'Database', 'Name', 'Score Greater Than',
+    columns = ['ID', 'Database', 'Name', 'Attributes', 'Score Greater Than',
                'Controversiality Less Than', 'Author', 'Search Words']
     df = pd.DataFrame(to_add, columns=columns)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+
+
+@app.callback(
+    Output('subcomponent_click_data', 'children'),
+    Input('subcomponent_table', 'active_cell'),
+    State('subcomponent_table', 'data'))
+def subcomponent_click_data(active_cell, table_data):
+    if active_cell:
+        cell = json.dumps(active_cell, indent=2)
+        row = active_cell['row']
+        col = active_cell['column_id']
+        value = table_data[row][col]
+        out = '%s' % value
+    else:
+        out = 'no cell selected/no data in the table'
+    return out

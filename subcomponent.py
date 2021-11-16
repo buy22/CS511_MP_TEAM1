@@ -19,7 +19,7 @@ class Subcomponent:
         self.db = db
 
     def to_list(self):
-        return [self.id, self.db, self.name, self.conditions[0], self.conditions[1],
+        return [self.id, self.db, self.name, ', '.join(self.attributes), self.conditions[0], self.conditions[1],
                 self.conditions[2], self.conditions[3]]
 
     def retrieve_inspect_data(self, inspected):
