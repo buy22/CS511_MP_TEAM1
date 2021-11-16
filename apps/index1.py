@@ -64,6 +64,27 @@ layout = html.Div([
         html.Div(id='create_workflow_result',
                  style={'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
     ]),
+    # subcomponent table
+    html.Div([
+        html.H3('Subcomponents Table'),
+        dash_table.DataTable(
+            id='subcomponent_table1',
+            columns=[
+                {'name': 'ID', 'id': 'subcomponent_table_id'},
+                {'name': 'Database', 'id': 'subcomponent_table_db'},
+                {'name': 'Name', 'id': 'subcomponent_table_name'},
+                {'name': 'Score Greater Than', 'id': 'subcomponent_table_score'},
+                {'name': 'Controversiality Less Than', 'id': 'subcomponent_table_controversiality'},
+                {'name': 'Author', 'id': 'subcomponent_table_author'},
+                {'name': 'Search Words', 'id': 'subcomponent_table_search'},
+            ],
+            data=[],
+            style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
+            style_table={'overflowY': 'show'},
+            page_current=0,
+            page_size=10,
+        ),
+    ]),
     # workflow table
     html.Div([
         html.H3('Workflows Table'),
@@ -102,11 +123,11 @@ layout = html.Div([
             n_intervals=0
         ),
         #
-        #dcc.Interval(
-            #id='update_table',
-            #interval=150 * 1000,
-            #n_intervals=0
-        #)
+        # dcc.Interval(
+        # id='update_table',
+        # interval=150 * 1000,
+        # n_intervals=0
+        # )
     ]),
     html.Div(id='workflow_click_data', style={'whiteSpace': 'pre-wrap'}),
     html.Div(html.Button('Initiate Workflow', id='start_workflow', n_clicks=0,
@@ -397,7 +418,9 @@ def execute_query(n_clicks, query):
 
 @app.callback(
     [Output('workflow_table', 'data'),
-     Output('workflow_table', 'columns')],
+     Output('workflow_table', 'columns'),
+     Output('subcomponent_table1', 'data'),
+     Output('subcomponent_table1', 'columns')],
     [Input('create_workflow', 'n_clicks'),
      Input('interval-component', 'n_intervals')])
 def update_workflow_table(n_clicks, n_intervals):
@@ -409,7 +432,11 @@ def update_workflow_table(n_clicks, n_intervals):
     columns = ['ID', 'Database', 'Name', 'Schedule', 'Status', 'Score Greater Than',
                'Controversiality Less Than', 'Author', 'Search Words', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
-    return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
+    columns_subcomponent = ['ID', 'Database', 'Name', 'Score Greater Than',
+                            'Controversiality Less Than', 'Author', 'Search Words']
+    df1 = pd.DataFrame([i.to_list() for i in create_subcomponents.subcomponents], columns=columns_subcomponent)
+    return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], \
+           df1.to_dict('records'), [{'name': i, 'id': i} for i in df1.columns]
 
 
 @app.callback(
@@ -534,7 +561,8 @@ def display_workflow_click_data(active_cell, table_data):
 
 # Text data visualization
 @app.callback(
-    [Output('word-cloud-figure', 'figure'), Output('word-count-figure', 'figure'), Output('word-relation-figure', 'figure')],
+    [Output('word-cloud-figure', 'figure'), Output('word-count-figure', 'figure'),
+     Output('word-relation-figure', 'figure')],
     [Input('dropdown1', 'value'), Input('text_visualize_key_word', 'value')]
 )
 def update_figure(selected_database,
@@ -557,7 +585,7 @@ def update_figure(selected_database,
         npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
         fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
 
-        #generate word relation
+        # generate word relation
         npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
-        fig_relation=npt.co_network(title='Co-occurrence network')
+        fig_relation = npt.co_network(title='Co-occurrence network')
         return fig_wordcloud, fig_wordcount, fig_relation
