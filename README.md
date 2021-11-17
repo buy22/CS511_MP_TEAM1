@@ -1,6 +1,6 @@
 # CS511_MP_TEAM1
 
-Make sure modules such as mongoDB, neo4j, pandas, sqlalchemy, py2neo, mysql.connector, etc. are installed, if not install them using pip.
+Make sure modules such as mongoDB, neo4j, pandas, sqlalchemy, py2neo, mysql.connector, seaborn, networkx, sklearn, wordcloud, etc. are installed, if not install them using pip.
 
 First set up the databases.
 
@@ -21,4 +21,4 @@ Finally, run **python Neo4j_data.py**.
 
 *NOTE:* Keep the Neo4j database running in the background or most Neo4j features will not work.
 
-To run the dashboard, run **python app.py**, then open http://localhost:8050/ or equivalently: http://127.0.0.1:8050/
+To run the dashboard, run **python index.py**, then open http://localhost:8050/ or equivalently: http://127.0.0.1:8050/
