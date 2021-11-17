@@ -334,7 +334,7 @@ class NLPlot():
 
     def co_network(self, title, sizing=100, node_size='adjacency_frequency',
                    color_palette='hls', layout=nx.kamada_kawai_layout,
-                   light_theme=True, width=1700, height=1200, save=False) -> px.scatter:
+                   light_theme=True, width=1000, height=1000, save=False) -> px.scatter:
         """Plots of co-occurrence networks
 
         Args:
