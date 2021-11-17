@@ -156,25 +156,6 @@ layout = html.Div([
             )
         ]),
 
-        # Mysql query section
-        html.Div([
-            html.H4('Query for MySQL'),
-            html.Div(dcc.Textarea(
-                id='custom_query',
-                placeholder='Enter your MySQL query here...',
-                style={'width': '80%', 'height': 150},
-            ),
-                style=dict(display='block', justifyContent='center')),
-            html.Div(html.Button('Query', id='submit_query', n_clicks=0),
-                     style=dict(display='block', justifyContent='center')),
-            html.Div(
-                html.H4('Query Results')
-                , style={'display': 'block'}
-            ),
-            html.Div(id='query_result',
-                     style={'display': 'block', 'width': '80%', 'marginLeft': 'auto', 'marginRight': 'auto'}),
-            html.Br()], id='sql_query', style={'display': 'block'}),
-
         # views of various tables/collections
         html.Div([
             html.H6('Select your table/collection/label'),
@@ -203,19 +184,6 @@ layout = html.Div([
         ),
         html.Div(id='click_data', style={'whiteSpace': 'pre-wrap', 'height': 200}),
     ]),
-    # Text data visualization
-    html.Div([
-        html.H3('Text data visualization'),
-        dcc.Input(
-            id='text_visualize_key_word',
-            placeholder='Input your keywords here, default: Disease',
-            value='Disease'
-        ),
-        # might try slider with time rather than input next week
-        html.Div([dcc.Graph(id='word-cloud-figure')]),
-        html.Div([dcc.Graph(id='word-count-figure')]),
-        html.Div([dcc.Graph(id='word-relation-figure')]),
-    ], id='visualizations')
 ])
 
 
@@ -334,27 +302,22 @@ def update_table_list(value, children1, children2):
 
 @app.callback(
     [Output('live_update_table', 'data'),
-     Output('live_update_table', 'columns'),
-     Output('sql_query', 'style'),
-     Output('visualizations', 'style')],
+     Output('live_update_table', 'columns')],
     [Input('dropdown1', 'value'),
      Input('dropdown2', 'value')])
 def update_figure_table(value1, value2):
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'block'}, \
-               {'display': 'none'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     elif value1 == "MongoDB":
         db = MongoDB('mp_team1', value2)
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}, \
-               {'display': 'none'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     else:
         db = Neo4j('neo4j', value2)
         df = db.all_data(value2)
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], {'display': 'none'}, \
-               {'display': 'block'}
+        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
 
 @app.callback(
@@ -387,21 +350,6 @@ def display_insepect_click_data(active_cell, table_data):
     else:
         out = 'no cell selected/no data in the table'
     return out
-
-
-@app.callback(
-    Output('query_result', 'children'),
-    Input('submit_query', 'n_clicks'),
-    State('custom_query', 'value')
-)
-def execute_query(n_clicks, query):
-    if n_clicks == 0:
-        raise PreventUpdate
-    else:
-        db = Mysql('team1', 'reddit_data')
-        # table does not matter here, so just put in reddit_data as default
-        results = db.send_query(query)
-        return 'Output: {}'.format(results)
 
 
 @app.callback(
@@ -563,35 +511,3 @@ def display_workflow_click_data(active_cell, table_data):
         return out
     else:
         return 'no workflow selected'
-
-
-# Text data visualization
-@app.callback(
-    [Output('word-cloud-figure', 'figure'), Output('word-count-figure', 'figure'),
-     Output('word-relation-figure', 'figure')],
-    [Input('dropdown1', 'value'), Input('text_visualize_key_word', 'value')]
-)
-def update_figure(selected_database,
-                  keyword):  # don't know the year tag in sample dataset means, if we know, we can plot dataset by year. selected_year=2015
-    if selected_database == "MySQL":
-        raise PreventUpdate
-    elif selected_database == "MongoDB":
-        raise PreventUpdate
-    else:
-        db = Neo4j('neo4j')
-        body_df = db.get_keyword_reddit(keyword)
-
-        # generate word cloud
-        wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
-            ' '.join(body_df))
-        fig_wordcloud = px.imshow(wordcloud.to_array())
-
-        # generate word count
-        stopwords = list(map(str.strip, open('stopwords').readlines()))
-        npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
-        fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
-
-        # generate word relation
-        npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
-        fig_relation = npt.co_network(title='Co-occurrence network')
-        return fig_wordcloud, fig_wordcount, fig_relation
