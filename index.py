@@ -19,7 +19,6 @@ app.layout = html.Div([
               [Input('url', 'pathname')])
 def display_page(pathname):
     if pathname == '/apps/create_subcomponents':
-        print(create_subcomponents.subcomponents)
         return create_subcomponents.layout
     elif pathname == '/apps/index1':
         return index1.layout

@@ -45,6 +45,7 @@ layout = html.Div([
                 {'name': 'ID', 'id': 'subcomponent_table_id'},
                 {'name': 'Database', 'id': 'subcomponent_table_db'},
                 {'name': 'Name', 'id': 'subcomponent_table_name'},
+                {'name': 'Attributes', 'id': 'subcomponent_table_attributes'},
                 {'name': 'Score Greater Than', 'id': 'subcomponent_table_score'},
                 {'name': 'Controversiality Less Than', 'id': 'subcomponent_table_controversiality'},
                 {'name': 'Author', 'id': 'subcomponent_table_author'},
@@ -306,17 +307,17 @@ def update_table_list(value, children1, children2):
     [Input('dropdown1', 'value'),
      Input('dropdown2', 'value')])
 def update_figure_table(value1, value2):
+    df = None
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     elif value1 == "MongoDB":
         db = MongoDB('mp_team1', value2)
         df = db.all_data()
-        return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
     else:
         db = Neo4j('neo4j', value2)
         df = db.all_data(value2)
+    if df is not None:
         return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns]
 
 
@@ -367,7 +368,7 @@ def update_workflow_table(n_clicks, n_intervals):
         to_add.append(workflow.to_list())
     columns = ['ID', 'Name', 'Schedule', 'Subcomponents', 'Status', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
-    columns_subcomponent = ['ID', 'Database', 'Name', 'Score Greater Than',
+    columns_subcomponent = ['ID', 'Database', 'Name', 'Attributes', 'Score Greater Than',
                             'Controversiality Less Than', 'Author', 'Search Words']
     df1 = pd.DataFrame([i.to_list() for i in create_subcomponents.subcomponents], columns=columns_subcomponent)
     return df.to_dict('records'), [{'name': i, 'id': i} for i in df.columns], \
