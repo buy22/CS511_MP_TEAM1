@@ -9,7 +9,7 @@ app.layout = html.Div([
         dcc.Link('| Homepage |', href='/apps/index1', style={'font-size':'15px'}),
         dcc.Link('| Create Subcomponents |', href='/apps/create_subcomponents', style={'font-size':'15px'}),
         dcc.Link('| Query MySQL Data |', href='/apps/query', style={'font-size':'15px'}),
-        dcc.Link('| Neo4j Text Data Visualization |', href='/apps/text_visualization', style={'font-size':'15px'}),
+        dcc.Link('| Text Data Visualization |', href='/apps/text_visualization', style={'font-size':'15px'}),
     ]),
     html.Div(id='page-content', children=[], style={'font-size':'15px'}),
 ])
