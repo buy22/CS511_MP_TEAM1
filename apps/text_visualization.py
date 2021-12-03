@@ -8,11 +8,27 @@ from dash.exceptions import PreventUpdate
 from wordcloud import WordCloud
 
 from Neo4j import Neo4j
+from Mysql import Mysql
+from mongoDB import MongoDB
 from workflow import Workflow
 from app import app
 
 # Text data visualization
 layout = html.Div([
+    # select database
+    html.Div([
+        html.H3('Select your database'),
+        dcc.Dropdown(
+            id='dropdown1',
+            options=[
+                {'label': 'MySQL', 'value': 'MySQL'},
+                {'label': 'MongoDB', 'value': 'MongoDB'},
+                {'label': 'Neo4j', 'value': 'Neo4j'},
+            ],
+            style={'width': '50%'},
+            value='Neo4j'
+        )
+    ]),
     html.Div([
         html.H3('Text data visualization'),
         dcc.Input(
@@ -34,15 +50,22 @@ layout = html.Div([
      Output('word-count-figure', 'figure'),
      # Output('word-relation-figure', 'figure'),
      ],
-    [Input('text_visualize_key_word', 'value'),
-     Input('submit_visualize', 'n_clicks')]
+    [Input('dropdown1', 'value'),
+    Input('text_visualize_key_word', 'value'),
+    Input('submit_visualize', 'n_clicks')]
 )
-def update_figure(keyword,n_clicks):
+def update_figure(database, keyword, n_clicks):
     if n_clicks == 0:
         raise PreventUpdate
     # don't know the year tag in sample dataset means, if we know, we can plot dataset by year. selected_year=2015
     else:
-        db = Neo4j('neo4j')
+        if database == "Neo4j":
+            db = Neo4j('neo4j')
+        elif database == "MySQL":
+            db = Mysql('team1', 'reddit_data')
+        #else:
+        #    db = MongoDB('mp_team1', 'comments')
+        
         body_df = db.get_keyword_reddit(keyword)
 
         # generate word cloud
@@ -52,7 +75,11 @@ def update_figure(keyword,n_clicks):
 
         # generate word count
         stopwords = list(map(str.strip, open('stopwords').readlines()))
-        npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
+        if database == "Neo4j":
+            npt = NLPlot(pd.DataFrame(body_df), target_col='Reddit.body')
+        else:
+            npt = NLPlot(pd.DataFrame(body_df), target_col='body')
+        # still need to add a separate case for MongoDB, if the dataframe column name is different
         fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
 
         # generate word relation
