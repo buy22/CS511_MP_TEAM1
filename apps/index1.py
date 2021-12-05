@@ -110,9 +110,8 @@ layout = html.Div([
 
     # Manage, View and Query Data
     html.Div([
-        html.H3('Manage, View and Query Data'),
         # data requiring inspection in incoming workflows
-        html.H4('Data Inspections Table'),
+        html.H3('Data Inspections Table'),
         dash_table.DataTable(
             id='inspection_data',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -135,14 +134,15 @@ layout = html.Div([
         ),
         html.Div(id='inspection_click_data', style={'whiteSpace': 'pre-wrap'}),
         html.Div(html.Button('Store Selected Data', id='store_selected', n_clicks=0,
-                             style={'background-color': 'black', 'color': 'white'}),
-                 style={'height': 50, 'display': 'block'}),
+                             style={'background-color': 'black', 'color': 'white', 'width': 230}),
+                 style={'height': 50, 'display': 'flex', 'float': 'left'}),
         html.Div(html.Button('Finish Inspection', id='finish_inspection', n_clicks=0,
-                             style={'background-color': 'black', 'color': 'white'}),
+                             style={'background-color': 'black', 'color': 'white', 'width': 230}),
                  style={'height': 50, 'display': 'block'}),
         html.Div(id='store_tmp'),
         html.Div(id='workflow_result'),
 
+        html.H3('Manage, View and Query Data'),
         # select database
         html.Div([
             html.H3('Select your database'),
