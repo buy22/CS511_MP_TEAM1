@@ -74,6 +74,7 @@ layout = html.Div([
                 {'name': 'Schedule', 'id': 'workflow_table_schedule'},
                 {'name': 'Subcomponents', 'id': 'workflow_table_subcomponents'},
                 {'name': 'Status', 'id': 'workflow_table_status'},
+                {'name': 'Privilege', 'id': 'workflow_table_privilege'},
                 {'name': 'Next workflow', 'id': 'workflow_table_next'},
             ],
             data=[],
@@ -308,6 +309,8 @@ def update_table_list(value, children1, children2):
      Input('dropdown2', 'value')])
 def update_figure_table(value1, value2):
     df = None
+    if value2 is None:
+        raise PreventUpdate
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
@@ -366,7 +369,7 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Name', 'Schedule', 'Subcomponents', 'Status', 'Next workflow']
+    columns = ['ID', 'Name', 'Schedule', 'Subcomponents', 'Status', 'Privilege', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     columns_subcomponent = ['ID', 'Database', 'Name', 'Attributes', 'Score Greater Than',
                             'Controversiality Less Than', 'Author', 'Search Words']
@@ -430,6 +433,7 @@ def update_inspect(idx, n_clicks1, children):
 
         inspect_data = pd.DataFrame()
         cur_subid = -1
+        s = None
         for i in workflows[idx].subcomponents:
             s = create_subcomponents.subcomponents[i]
             if s.inspect_data is not None:
