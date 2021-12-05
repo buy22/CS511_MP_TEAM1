@@ -63,8 +63,8 @@ def update_figure(database, keyword, n_clicks):
             db = Neo4j('neo4j')
         elif database == "MySQL":
             db = Mysql('team1', 'reddit_data')
-        #else:
-        #    db = MongoDB('mp_team1', 'comments')
+        else:
+            db = MongoDB('mp_team1', 'comments')
         
         body_df = db.get_keyword_reddit(keyword)
 
