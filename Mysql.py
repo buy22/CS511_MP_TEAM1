@@ -132,3 +132,15 @@ class Mysql:
         self.cursor.execute("show tables from " + self.database)
         rows = self.cursor.fetchall()
         return rows
+    
+    def get_keyword_reddit(self, keyword):
+        # get reddit body data that contains keyword
+        keyword = '\"%'+ keyword + '%\"'
+        query = "SELECT body FROM reddit_data WHERE body LIKE " + keyword
+        self.connect()
+        data = pd.read_sql(
+            query, self.cnx
+        );
+        # convert string to lower case
+        body_df = data['body'].str.lower()
+        return body_df
