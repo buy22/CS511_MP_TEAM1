@@ -69,9 +69,12 @@ def update_figure(database, keyword, n_clicks):
         body_df = db.get_keyword_reddit(keyword)
 
         # generate word cloud
-        wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
+        width_wc,height_wc=1200,600
+        wordcloud = WordCloud(width=width_wc, height=height_wc, max_font_size=150, background_color='white',margin=0,scale=3).generate(
             ' '.join(body_df))
-        fig_wordcloud = px.imshow(wordcloud.to_array(),width=1200,height=600)
+        fig_wordcloud = px.imshow(wordcloud.to_array(),width=width_wc,height=height_wc)
+        fig_wordcloud.update_xaxes(showticklabels=False)
+        fig_wordcloud.update_yaxes(showticklabels=False)
 
         # generate word count
         stopwords = list(map(str.strip, open('stopwords').readlines()))
