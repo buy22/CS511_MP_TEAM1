@@ -18,11 +18,14 @@ class Workflow:
         self.status = status
         self.dependency = dependency
         self.wait_time = schedule
+        self.privilege = 'None'
     
     def to_list(self):
-        return [self.id, self.name, self.schedule, ','.join([str(i) for i in self.subcomponents]), self.status, str(self.dependency)]
+        return [self.id, self.name, self.schedule, ','.join([str(i) for i in self.subcomponents]),
+                self.status, self.privilege, str(self.dependency)]
 
     def workflow_step1(self, scheduled=False):
+        self.privilege = 'Read'
         s = True
         for i in self.subcomponents:
             s = create_subcomponents.subcomponents[i]
@@ -34,6 +37,11 @@ class Workflow:
         s = True
         for i in self.subcomponents:
             s = create_subcomponents.subcomponents[i]
+
+            if s.strict_data.empty and s.inspect_data.empty:
+                self.privilege = 'Read'
+            else:
+                self.privilege = 'Read & Write'
             success = s.subcomponent_step2(scheduled)
             s = s and success
         return s
@@ -42,4 +50,5 @@ class Workflow:
         for i in self.subcomponents:
             s = create_subcomponents.subcomponents[i]
             _, success = s.subcomponent_step3(self.id)
+            self.privilege = 'None'
         return True

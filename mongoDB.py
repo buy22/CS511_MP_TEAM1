@@ -41,8 +41,8 @@ class MongoDB:
         if cond[3] is not None:
             self.collection.create_index([('body', 'text')])
             a = '.*' + cond[3] + '.*'
-            strict_conditions["body"] = {"$regex": a}
-            inspection_conditions["body"] = {"$regex": a}
+            strict_conditions['body'] = {"$regex": a}
+            inspection_conditions['body'] = {"$regex": a}
         show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0,
                 "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0, 'author_cakeday': 0}
         try:
@@ -76,4 +76,14 @@ class MongoDB:
         except Exception as ex:
             return None, False
 
-
+    def get_keyword_reddit(self, keyword):
+        # get reddit body data that contains keyword
+        self.collection.create_index([('body', 'text')])
+        condition = {'body': {"$regex": '.*' + keyword.lower() + '.*'}}
+        show = {"_id": 0, "author_flair_text": 0, "author_flair_css_class": 0, "distinguished": 0,
+                "can_gild": 0, "gilded": 0, "is_submitter": 0, "link_id": 0, "stickied": 0, 'author_cakeday': 0}
+        data = pd.DataFrame(list(self.collection.find(condition, show)))
+        df = data[data.columns.intersection(['body'])]
+        # convert string to lower case
+        body_df = df['body'].str.lower()
+        return body_df

@@ -74,6 +74,7 @@ layout = html.Div([
                 {'name': 'Schedule', 'id': 'workflow_table_schedule'},
                 {'name': 'Subcomponents', 'id': 'workflow_table_subcomponents'},
                 {'name': 'Status', 'id': 'workflow_table_status'},
+                {'name': 'Privilege', 'id': 'workflow_table_privilege'},
                 {'name': 'Next workflow', 'id': 'workflow_table_next'},
             ],
             data=[],
@@ -109,9 +110,8 @@ layout = html.Div([
 
     # Manage, View and Query Data
     html.Div([
-        html.H3('Manage, View and Query Data'),
         # data requiring inspection in incoming workflows
-        html.H4('Data Inspections Table'),
+        html.H3('Data Inspections Table'),
         dash_table.DataTable(
             id='inspection_data',
             style_cell={'textAlign': 'left', 'overflow': 'hidden', 'maxWidth': 0, 'textOverflow': 'ellipsis'},
@@ -134,14 +134,15 @@ layout = html.Div([
         ),
         html.Div(id='inspection_click_data', style={'whiteSpace': 'pre-wrap'}),
         html.Div(html.Button('Store Selected Data', id='store_selected', n_clicks=0,
-                             style={'background-color': 'black', 'color': 'white'}),
-                 style={'height': 50, 'display': 'block'}),
+                             style={'background-color': 'black', 'color': 'white', 'width': 230}),
+                 style={'height': 50, 'display': 'flex', 'float': 'left'}),
         html.Div(html.Button('Finish Inspection', id='finish_inspection', n_clicks=0,
-                             style={'background-color': 'black', 'color': 'white'}),
+                             style={'background-color': 'black', 'color': 'white', 'width': 230}),
                  style={'height': 50, 'display': 'block'}),
         html.Div(id='store_tmp'),
         html.Div(id='workflow_result'),
 
+        html.H3('Manage, View and Query Data'),
         # select database
         html.Div([
             html.H3('Select your database'),
@@ -308,6 +309,8 @@ def update_table_list(value, children1, children2):
      Input('dropdown2', 'value')])
 def update_figure_table(value1, value2):
     df = None
+    if value2 is None:
+        raise PreventUpdate
     if value1 == "MySQL":
         db = Mysql('team1', value2)
         df = db.all_data()
@@ -366,7 +369,7 @@ def update_workflow_table(n_clicks, n_intervals):
         if workflow.status == 'Workflow completed':
             workflow.status = 'Idle'
         to_add.append(workflow.to_list())
-    columns = ['ID', 'Name', 'Schedule', 'Subcomponents', 'Status', 'Next workflow']
+    columns = ['ID', 'Name', 'Schedule', 'Subcomponents', 'Status', 'Privilege', 'Next workflow']
     df = pd.DataFrame(to_add, columns=columns)
     columns_subcomponent = ['ID', 'Database', 'Name', 'Attributes', 'Score Greater Than',
                             'Controversiality Less Than', 'Author', 'Search Words']
@@ -430,6 +433,7 @@ def update_inspect(idx, n_clicks1, children):
 
         inspect_data = pd.DataFrame()
         cur_subid = -1
+        s = None
         for i in workflows[idx].subcomponents:
             s = create_subcomponents.subcomponents[i]
             if s.inspect_data is not None:
