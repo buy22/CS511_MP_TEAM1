@@ -24,7 +24,7 @@ layout = html.Div([
         # might try slider with time rather than input next week
         html.Div([dcc.Graph(id='word-cloud-figure')]),
         html.Div([dcc.Graph(id='word-count-figure')]),
-        # html.Div([dcc.Graph(id='word-relation-figure')]),
+        html.Div([dcc.Graph(id='word-relation-figure')]),
     ], id='visualizations')
 ])
 
@@ -32,7 +32,7 @@ layout = html.Div([
 @app.callback(
     [Output('word-cloud-figure', 'figure'),
      Output('word-count-figure', 'figure'),
-     # Output('word-relation-figure', 'figure'),
+     Output('word-relation-figure', 'figure'),
      ],
     [Input('text_visualize_key_word', 'value'),
      Input('submit_visualize', 'n_clicks')]
@@ -56,6 +56,6 @@ def update_figure(keyword,n_clicks):
         fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
 
         # generate word relation
-        # npt.build_graph(stopwords=stopwords, min_edge_frequency=2)
-        # fig_relation = npt.co_network(title='Co-occurrence network')
-        return fig_wordcloud, fig_wordcount#, fig_relation
+        npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
+        fig_relation = npt.co_network(title='Co-occurrence network')
+        return fig_wordcloud, fig_wordcount, fig_relation
