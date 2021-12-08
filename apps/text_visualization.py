@@ -40,7 +40,7 @@ layout = html.Div([
         # might try slider with time rather than input next week
         html.Div([dcc.Graph(id='word-cloud-figure')]),
         html.Div([dcc.Graph(id='word-count-figure')]),
-        # html.Div([dcc.Graph(id='word-relation-figure')]),
+        html.Div([dcc.Graph(id='word-relation-figure')]),
     ], id='visualizations')
 ])
 
@@ -48,7 +48,7 @@ layout = html.Div([
 @app.callback(
     [Output('word-cloud-figure', 'figure'),
      Output('word-count-figure', 'figure'),
-     # Output('word-relation-figure', 'figure'),
+     Output('word-relation-figure', 'figure'),
      ],
     [Input('dropdown1', 'value'),
     Input('text_visualize_key_word', 'value'),
@@ -69,9 +69,12 @@ def update_figure(database, keyword, n_clicks):
         body_df = db.get_keyword_reddit(keyword)
 
         # generate word cloud
-        wordcloud = WordCloud(width=1200, height=600, max_font_size=150, background_color='white').generate(
+        width_wc,height_wc=1200,600
+        wordcloud = WordCloud(width=width_wc, height=height_wc, max_font_size=150, background_color='white',margin=0,scale=3).generate(
             ' '.join(body_df))
-        fig_wordcloud = px.imshow(wordcloud.to_array(),width=1200,height=600)
+        fig_wordcloud = px.imshow(wordcloud.to_array(),width=width_wc,height=height_wc)
+        fig_wordcloud.update_xaxes(showticklabels=False)
+        fig_wordcloud.update_yaxes(showticklabels=False)
 
         # generate word count
         stopwords = list(map(str.strip, open('stopwords').readlines()))
@@ -83,6 +86,6 @@ def update_figure(database, keyword, n_clicks):
         fig_wordcount = npt.bar_ngram(title='uni-gram', ngram=1, top_n=50, stopwords=stopwords)
 
         # generate word relation
-        # npt.build_graph(stopwords=stopwords, min_edge_frequency=2)
-        # fig_relation = npt.co_network(title='Co-occurrence network')
-        return fig_wordcloud, fig_wordcount#, fig_relation
+        npt.build_graph(stopwords=stopwords, min_edge_frequency=1)
+        fig_relation = npt.co_network(title='Co-occurrence network')
+        return fig_wordcloud, fig_wordcount, fig_relation
