@@ -37,11 +37,16 @@ class Workflow:
         s = True
         for i in self.subcomponents:
             s = create_subcomponents.subcomponents[i]
-
-            if s.strict_data.empty and s.inspect_data.empty:
+            if s.strict_data is not None and s.inspect_data is not None:
+                if s.strict_data.empty and s.inspect_data.empty:
+                    self.privilege = 'Read'
+                else:
+                    self.privilege = 'Read & Write'
+            elif s.strict_data is None:
                 self.privilege = 'Read'
             else:
                 self.privilege = 'Read & Write'
+
             success = s.subcomponent_step2(scheduled)
             s = s and success
         return s
